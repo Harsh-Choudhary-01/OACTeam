@@ -1,0 +1,6 @@
+{
+  "name": "OACTeam: Java",
+  "description": "",
+  "image": "heroku/java",
+  "addons": [ "heroku-postgresql" ]
+}
