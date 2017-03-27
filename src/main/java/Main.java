@@ -25,7 +25,7 @@ public class Main
             Map<String , Object> user = getUser(request);
             attributes.put("loggedIn" , user.get("loggedIn"));
             if((boolean) attributes.get("loggedIn")) {
-                
+
             }
             attributes.put("user" , user.get("claims"));
             attributes.put("loggedIn" , user.get("loggedIn"));
@@ -88,9 +88,8 @@ public class Main
     private static Map<String, Object> checkToken(String token) {
         Map<String, Object> values = new HashMap<>();
         final String secret = System.getenv("AUTH0_CLIENT_SECRET");
-        final byte[] decodedSecret = Base64.getUrlDecoder().decode(secret);
         try {
-            final JWTVerifier verifier = new JWTVerifier(decodedSecret);
+            final JWTVerifier verifier = new JWTVerifier(secret);
             final Map<String, Object> claims = verifier.verify(token);
             values.put("loggedIn", true);
             values.put("claims", claims);
