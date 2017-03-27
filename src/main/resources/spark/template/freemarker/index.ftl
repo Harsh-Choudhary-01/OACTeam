@@ -6,11 +6,11 @@
 -->
 <html>
 	<head>
-		<title>Theory by TEMPLATED</title>
+		<title>OACTeam</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="apple-mobile-web-app-capable" content="yes">
-		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 		<link rel="stylesheet" href="css/main.css" />
 	</head>
 	<body>
@@ -18,7 +18,7 @@
 		<!-- Header -->
 			<header id="header">
 				<div class="inner">
-					<a href="/" class="logo">Theory</a>
+					<a href="/" class="logo">OACTeam</a>
 					<nav id="nav">
 						<a href="/">Home</a>
 						<a href="/generic">Generic</a>
@@ -30,17 +30,16 @@
 
 		<!-- Banner -->
 			<section id="banner">
-				<h1>Welcome to Theory</h1>
-				<p>A free responsive HTML5 website template by TEMPLATED.</p>
+				<h1>Welcome to OACTeam</h1>
 			</section>
-
+		<#if loggedIn>
 		<!-- One -->
 			<section id="one" class="wrapper">
 				<div class="inner">
 					<div class="flex flex-3">
 						<article>
 							<header>
-								<h3>Magna tempus sed amet<br /> aliquam veroeros</h3>
+								<h3>Magna tempus sed amet ${user.email}<br /> aliquam veroeros</h3>
 							</header>
 							<p>Morbi interdum mollis sapien. Sed ac risus. Phasellus lacinia, magna a ullamcorper laoreet, lectus arcu.</p>
 							<footer>
@@ -144,7 +143,13 @@
 					</div>
 				</div>
 			</section>
-
+		<#else>
+			<section id="signup" class="wrapper special">
+				<div class="inner">
+					<a class="signup button special" href="#">Login</a>
+				</div>
+			</section>
+		</#if>
 		<!-- Footer -->
 			<footer id="footer">
 				<div class="inner">
@@ -179,6 +184,38 @@
 			<script src="js/skel.min.js"></script>
 			<script src="js/util.js"></script>
 			<script src="js/main.js"></script>
-
+			<script src="https://cdn.auth0.com/js/lock/10.0/lock.min.js"></script>
+			<script type="text/javascript">
+				$(document).ready(function(e) {
+					$('.signup').click(function(e) {
+						e.preventDefault();
+						lock.show();
+					});
+					if(!${loggedIn?c}) {
+						var lock = new Auth0Lock('${clientId}' , '${clientDomain}' , {
+							loginAfterSignup: true ,
+							auth: {
+								redirect: true ,
+								params: {
+									scope: 'openid user_id name nickname email'
+								}
+							}
+						});
+						lock.on("authenticated" , function(authResult) {
+							localStorage.setItem('id_token' , authResult.idToken);
+							window.location.href = "/login?token=" + authResult.idToken;
+						});
+						lock.on("authorization_error" , function(error)
+			        	{
+			        		lock.show({
+			        			flashMessage: {
+			        				type: 'error' ,
+			        				text: error.error_description
+			        			}
+			        		});
+			        	});
+					}
+				});
+			</script>
 	</body>
 </html>
