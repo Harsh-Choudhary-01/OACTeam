@@ -15,6 +15,7 @@ public class Main
     private static String clientDomain = System.getenv("AUTH0_DOMAIN");
     private static SecureRandom random = new SecureRandom();
     private static final String X_FORWARDED_PROTO = "x-forwarded-proto";
+    private static final int yearInSeconds = 24 * 365 * 60 * 60;
     public static void main(String[] args)
     {
         port(Integer.valueOf(System.getenv("PORT")));
@@ -61,6 +62,7 @@ public class Main
         });
 
         before((request, response) -> {
+            response.cookie("JSESSIONID" , request.cookie("JSESSIONID") , yearInSeconds);
             if (request.raw().getHeader(X_FORWARDED_PROTO) != null) {
                 if (request.raw().getHeader(X_FORWARDED_PROTO).indexOf("https") != 0) {
                     response.redirect("https://" + request.raw().getServerName() + (request.raw().getPathInfo() == null ? "" : request.raw().getPathInfo()));
