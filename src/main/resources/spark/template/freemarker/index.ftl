@@ -33,7 +33,123 @@
 				<h1>Welcome to OACTeam</h1>
 			</section>
 		<#if loggedIn>
-		<!-- One -->
+			<#if joinedRequests?size != 0>
+				<section id="joined" class="wrapper">
+					<div class="inner">
+						<header>
+							<h2>Joined Requests</h2>
+						</header>
+						<div class="row">
+							<#list joinedRequests as x>
+								<div id="${x.id}" class="box 3u 12u$(small)">
+									<h3>${x.description}</h3>
+									<ul class="alt">
+									<#list x.joinedInfo as info>
+										<li classInfo="${info[4]}">${info[0]}:
+											<#if info[1] == "0">
+												Tank 
+											</#if>
+											<#if info[2] == "0">
+												DPS 
+											</#if>
+											<#if info[3] == "0">
+												Heal
+											</#if>
+										</li>
+									</#list>
+									</ul>
+								</div>
+							</#list>
+						</div>
+					</div>
+				</section>
+			</#if>
+			<#if joiningRequests?size != 0>
+				<section id="joined" class="wrapper special">
+					<div class="inner">
+						<header>
+							<h2>Joining Requests</h2>
+						</header>
+						<div class="row">
+							<#list joiningRequests as x>
+								<div id="${x.id}" class="box 3u 12u$(small)">
+									<h3>${x.description}</h3>
+									<ul class="alt">
+									<#list x.joinedInfo as info>
+										<li classInfo="${info[4]}">${info[0]}:
+											<#if info[1] == "0">
+												Tank 
+											</#if>
+											<#if info[2] == "0">
+												DPS 
+											</#if>
+											<#if info[3] == "0">
+												Heal
+											</#if>
+										</li>
+									</#list>
+									</ul>
+								</div>
+							</#list>
+						</div>
+					</div>
+				</section>
+			</#if>
+			<#if requests?size != 0>
+				<section id="joined" class="wrapper">
+					<div class="inner">
+						<header>
+							<h2>Open Requests</h2>
+						</header>
+						<div class="row">
+							<#list requests as x>
+								<div id="${x.id}" class="box 3u 12u$(small)">
+									<h3>${x.description}</h3>
+									<ul class="alt">
+									<#list x.joinedInfo as info>
+										<li classInfo="${info[4]}">${info[0]}:
+											<#if info[1] == "0">
+												Tank 
+											</#if>
+											<#if info[2] == "0">
+												DPS 
+											</#if>
+											<#if info[3] == "0">
+												Heal
+											</#if>
+										</li>
+									</#list>
+									</ul>
+									<a href="#" class="button special">Join</a>
+								</div>
+							</#list>
+						</div>
+					</div>
+				</section>
+			</#if>
+
+			<section id="groups" class="wrapper special">
+				<div class="inner">
+					<header><h2>Groups</h2></header>
+					<div class="row">
+						<h3>Create Group</h3>
+						<div class="8u 12u$">
+							<input type="text" name="groupName" placeholder="Group Name">
+						</div>
+						<div class="4u$ 12u$">
+							<a href="#" class="button">Create Group</a>
+						</div>
+						<h3>Join Group</h3>
+						<div class="8u 12u$">
+							<input type="text" name="groupID" placeholder="Group ID">
+						</div>
+						<div class="4u$ 12u$">
+							<a href="#" class="button">Join Group</a>
+						</div>
+					</div>
+				</div>
+			</section>
+<!-- 
 			<section id="one" class="wrapper">
 				<div class="inner">
 					<div class="flex flex-3">
@@ -68,7 +184,6 @@
 				</div>
 			</section>
 
-		<!-- Two -->
 			<section id="two" class="wrapper style1 special">
 				<div class="inner">
 					<header>
@@ -108,7 +223,6 @@
 				</div>
 			</section>
 
-		<!-- Three -->
 			<section id="three" class="wrapper special">
 				<div class="inner">
 					<header class="align-center">
@@ -142,7 +256,7 @@
 						</article>
 					</div>
 				</div>
-			</section>
+			</section> -->
 		<#else>
 			<section id="signup" class="wrapper special">
 				<div class="inner">
