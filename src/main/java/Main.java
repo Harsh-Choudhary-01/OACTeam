@@ -122,7 +122,6 @@ public class Main
                 attributes.put("requests" , requests);
             }
             attributes.put("user" , user);
-            attributes.put("loggedIn" , user.get("loggedIn"));
             attributes.put("clientId" , clientId);
             attributes.put("clientDomain" , clientDomain);
             return new ModelAndView(attributes, "index.ftl");
