@@ -354,8 +354,8 @@
 					$('.group-select').chosen().change(function(event , params) {
 						console.log("Chosen parameters group: " + params);
 					});
-					$('role-select').chosen();
-					$('class-select').chosen();
+					$('.role-select').chosen();
+					$('.class-select').chosen();
 					$('.signup').click(function(e) {
 						e.preventDefault();
 						lock.show();
