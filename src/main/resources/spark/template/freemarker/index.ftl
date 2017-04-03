@@ -133,19 +133,66 @@
 					<header><h2>Groups</h2></header>
 					<div class="row">
 						<h3>Create Group</h3>
-						<div class="8u 12u$">
-							<input type="text" name="groupName" placeholder="Group Name">
-						</div>
-						<div class="4u$ 12u$">
-							<a href="#" class="button">Create Group</a>
-						</div>
-						<h3>Join Group</h3>
-						<div class="8u 12u$">
-							<input type="text" name="groupID" placeholder="Group ID">
-						</div>
-						<div class="4u$ 12u$">
-							<a href="#" class="button">Join Group</a>
-						</div>
+						<form id="createGroup" autocomplete="off" action="#">
+							<div class="6u 12u$(small)">
+								<input type="text" name="groupName" placeholder="Group Name" id="groupName" autocomplete="off">
+							</div>
+							<div class="4u$ 12u$(small)">
+								<button type="button" class="button fit">Create Group</button>
+							</div>
+						</form>
+						<form id="joinGroup" autocomplete="off" action="#">
+							<h3>Join Group</h3>
+							<div class="6u 12u$(small)">
+								<input type="text" name="groupID" placeholder="Group ID" id="groupID" autocomplete="off">
+							</div>
+							<div class="4u$ 12u$(small)">
+								<button type="button" class="button fit">Join Group</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</section>
+
+			<section id="requests" class="wrapper special">
+				<div class="inner">
+					<header><h2>Requests</h2></header>
+					<div class="row">
+						<h3>Create Request</h3>
+						<form id="createRequest" action="#" autocomplete="off">
+							<div class="6u 12u$(small)">
+								<input type="text" name="requestDescription" placeholder="Description" id="requestDescription" autocomplete="off">
+							</div>
+							<div class="6u$ 12u$(small)">
+								<select class="group-select" data-placeholder="Groups that can View Request" multiple style="display: none;">
+									<option></option>
+									<#list groups as g>
+										<option value="${g[0]}">${g[1]}</option>
+									</#list>
+								</select>
+							</div>
+							<div class="6u 12u$(small)">
+								<select class="role-select" data-placeholder="Choose Your Roles" multiple style="display: none;">
+									<option></option>
+									<option value="Healer">Healer</option>
+									<option value="Tank">Tank</option>
+									<option value="DPS">DPS</option>
+								</select>
+							</div>
+							<div class="6u 12u$(small)">
+								<select class="class-select" data-placeholder="Choose Your Classes" multiple style="display: none;">
+									<option></option>
+									<option value="Monk">Monk</option>
+									<option value="Warrior">Warrior</option>
+									<option value="Mage">Mage</option>
+									<option value="Flame">Flame Knight</option>
+									<option value="Ranger">Ranger</option>
+								</select>
+							</div>
+							<div class="4u$ 12u$(small)">
+								<button type="button" class="button fit">Create Request</button>
+							</div>
+						</form>
 					</div>
 				</div>
 			</section>
@@ -298,12 +345,50 @@
 			<script src="js/skel.min.js"></script>
 			<script src="js/util.js"></script>
 			<script src="js/main.js"></script>
+			<script src="js/chosen.jquery.min.js"></script>
 			<script src="https://cdn.auth0.com/js/lock/10.0/lock.min.js"></script>
 			<script type="text/javascript">
 				$(document).ready(function(e) {
+					$('.group-select').chosen().change(function(event , params) {
+						console.log("Chosen parameters group: " + params);
+					});
+					$('role-select').chosen();
+					$('class-select').chosen();
 					$('.signup').click(function(e) {
 						e.preventDefault();
 						lock.show();
+					});
+					$('#createGroup').submit(function(e) {
+						$.ajax({
+							url: window.location.href ,
+							method: 'POST' ,
+							dataType: 'json' ,
+							data: $('#groupName').val() ,
+							success: function(data) {
+								if(data === 'true') {
+									$('group-select').append('<option val="' + data.id + '">' + data.name + '</option>');
+									$('#createGroup').reset();
+									alert("Group created successfully");
+								}
+								else {
+									alert("Could not create group.")
+								}
+							}
+						});
+						e.preventDefault();
+					});
+					$('#joinGroup').submit(function(e) {
+						$.ajax({
+							url: window.location.href ,
+							method: 'POST' ,
+							dataType: 'json' , 
+							data: $('#groupID').val() ,
+							success: function(data) {
+								//TODO: Since posting to same location must specify what request is for
+								//ALSO
+								alert("Joined group");
+							}
+						});
 					});
 					if(!${loggedIn?c}) {
 						var lock = new Auth0Lock('${clientId}' , '${clientDomain}' , {

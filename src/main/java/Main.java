@@ -52,6 +52,7 @@ public class Main
                 Connection connection1 = null;
                 boolean nameGiven = false;
                 Map<String , String> groupNames = new LinkedHashMap<>(); //Contains groupID as key and group name as valu
+                ArrayList<String[]> groupsArray = new ArrayList<>();
                 ArrayList<Map<String , Object>> joinedRequestsList = new ArrayList<>();
                 ArrayList<Map<String , Object>> joiningRequestsList = new ArrayList<>();
                 ArrayList<Map<String , Object>> requests = new ArrayList<>();
@@ -71,6 +72,7 @@ public class Main
                         for(String s : groups)
                         {
                             rs = stmt.executeQuery("SELECT name from groups where id = '" + s + "'"); //Get groupNames
+                            groupsArray.add(new String[]{s , rs.getString(1)});
                             groupNames.put(s , rs.getString(1));
                         }
                         for(String s : joinedRequests) {
@@ -116,7 +118,7 @@ public class Main
                         e.printStackTrace();
                     }
                 }
-                attributes.put("groups" , groupNames);
+                attributes.put("groups" , groupsArray);
                 attributes.put("joinedRequests" , joinedRequestsList);
                 attributes.put("joiningRequests" , joiningRequestsList);
                 attributes.put("requests" , requests);
@@ -161,6 +163,21 @@ public class Main
                 }
             }
         });
+
+        post("/" , (request , response) -> {
+            String newId = newID();
+            Connection con = null;
+            con = DatabaseUrl.extract().getConnection();
+            PreparedStatement stmt = con.prepareStatement("INSERT INTO groups(name , id) VALUES (? , ?)");
+            String name = request.body();
+            if(checkAlphaNumeric(name)) {
+                stmt.setString(1 , name);
+                stmt.setString(2 , newId);
+                stmt.executeUpdate();
+                return "true";
+            }
+            return "false";
+        });
     }
 
     private static Map<String, Object> getUser(Request request) { //Returns a map with a loggedIn value. If the loggedIn value is true also contains a value with key "claims"
@@ -194,7 +211,14 @@ public class Main
         }
     }
 
-    private String newID() {
+    private static String newID() {
         return new BigInteger(30, random).toString(32);
+    }
+
+    private static boolean checkAlphaNumeric(String s) {
+        for(int i = 0 ; i < s.length() ; i++)
+            if(!Character.isLetterOrDigit(s.charAt(i)))
+                return false;
+        return true;
     }
 }
