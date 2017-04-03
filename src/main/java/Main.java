@@ -8,7 +8,10 @@ import java.util.Map;
 import static spark.Spark.*;
 
 import com.auth0.jwt.JWTVerifier;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.heroku.sdk.jdbc.DatabaseUrl;
+import org.json.JSONObject;
 import spark.Request;
 import spark.template.freemarker.FreeMarkerEngine;
 import spark.ModelAndView;
@@ -165,18 +168,20 @@ public class Main
         });
 
         post("/" , (request , response) -> {
-            String newId = newID();
-            Connection con = null;
-            con = DatabaseUrl.extract().getConnection();
-            PreparedStatement stmt = con.prepareStatement("INSERT INTO groups(name , id) VALUES (? , ?)");
-            String name = request.body();
-            if(checkAlphaNumeric(name)) {
-                stmt.setString(1 , name);
-                stmt.setString(2 , newId);
-                stmt.executeUpdate();
-                return "true";
+            Map<String , Object> user = getUser(request);
+            JSONObject jsonResponse = new JSONObject();
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String , String> jsonRequest = mapper.readValue(request.body() , new TypeReference<Map<String , String>>(){});
+            if((boolean) user.get("loggedIn")) {
+                user = (Map<String , Object>)user.get("claims");
+                String newId = newID();
+                String userId = (String)user.get("user_id");
+                if(jsonRequest.get("type").equals("addGroup"))
+                    addGroup(jsonResponse , newId , userId , jsonRequest.get("name"));
             }
-            return "false";
+            if(jsonResponse.opt("success") == null)
+                jsonResponse.put("success" , false);
+            return String.valueOf(jsonResponse);
         });
     }
 
@@ -220,5 +225,42 @@ public class Main
             if(!Character.isLetterOrDigit(s.charAt(i)))
                 return false;
         return true;
+    }
+
+    private static void addGroup(JSONObject response , String groupID , String userId , String name) {
+        Connection con = null;
+        try {
+            con = DatabaseUrl.extract().getConnection();
+            con.setAutoCommit(false);
+            PreparedStatement stmt = con.prepareStatement("INSERT INTO groups(name , id) VALUES (? , ?)");
+            if (checkAlphaNumeric(name)) {
+                stmt.setString(1, name);
+                stmt.setString(2,  groupID);
+                stmt.executeUpdate();
+                //TODO: check user ID make sure logged In and add joined groups to the text[] for the user
+                //TODO: make sure add post type for each post to different
+                stmt = con.prepareStatement("UPDATE users SET groups = array_append(groups , ?) WHERE userID = ?");
+                stmt.setString(1,  groupID);
+                stmt.setString(2, userId);
+                stmt.executeUpdate();
+                con.commit();
+                response.put("success" , true);
+            }
+        }
+        catch (Exception e) {
+            try {
+                if (con != null)
+                    con.rollback();
+            }
+            catch (SQLException s) {
+                s.printStackTrace();
+            }
+            e.printStackTrace();
+        }
+        finally {
+            if(con != null) try { con.close(); } catch(SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

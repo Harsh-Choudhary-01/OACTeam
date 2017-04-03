@@ -162,7 +162,7 @@
 					<header><h2>Requests</h2></header>
 					<h3>Create Request</h3>
 					<form id="createRequest" action="#" autocomplete="off">
-						<div class="row">
+						<div class="row uniform">
 							<div class="6u 12u$(small)">
 								<input type="text" name="requestDescription" placeholder="Description" id="requestDescription" autocomplete="off">
 							</div>
@@ -365,13 +365,17 @@
 						lock.show();
 					});
 					$('#createGroup').submit(function(e) {
+						var req = {
+							type : "addGroup" , 
+							name : $('#groupName').val()
+						};
 						$.ajax({
 							url: window.location.href ,
 							method: 'POST' ,
 							dataType: 'json' ,
-							data: $('#groupName').val() ,
+							data: req ,
 							success: function(data) {
-								if(data === 'true') {
+								if(data.success == true) {
 									$('group-select').append('<option val="' + data.id + '">' + data.name + '</option>');
 									$('#createGroup').reset();
 									alert("Group created successfully");
