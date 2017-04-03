@@ -373,7 +373,7 @@
 							url: window.location.href ,
 							method: 'POST' ,
 							dataType: 'json' ,
-							data: req ,
+							data: JSON.stringify(req) ,
 							success: function(data) {
 								if(data.success == true) {
 									$('group-select').append('<option val="' + data.id + '">' + data.name + '</option>');
