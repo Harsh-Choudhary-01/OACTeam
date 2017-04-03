@@ -351,12 +351,15 @@
 			<script src="js/chosen.jquery.min.js"></script>
 			<script src="https://cdn.auth0.com/js/lock/10.0/lock.min.js"></script>
 			<script type="text/javascript">
+				var opt = {
+					width : "100%"
+				};
 				$(document).ready(function(e) {
-					$('.group-select').chosen().change(function(event , params) {
+					$('.group-select').chosen(opt).change(function(event , params) {
 						console.log("Chosen parameters group: " + params);
 					});
-					$('.role-select').chosen();
-					$('.class-select').chosen();
+					$('.role-select').chosen(opt);
+					$('.class-select').chosen(opt);
 					$('.signup').click(function(e) {
 						e.preventDefault();
 						lock.show();
