@@ -131,35 +131,37 @@
 			<section id="groups" class="wrapper special">
 				<div class="inner">
 					<header><h2>Groups</h2></header>
-					<div class="row">
-						<h3>Create Group</h3>
-						<form id="createGroup" autocomplete="off" action="#">
+					<h3>Create Group</h3>
+					<form id="createGroup" autocomplete="off" action="#">
+						<div class="row">
 							<div class="6u 12u$(small)">
 								<input type="text" name="groupName" placeholder="Group Name" id="groupName" autocomplete="off">
 							</div>
 							<div class="4u$ 12u$(small)">
-								<button type="button" class="button fit">Create Group</button>
+								<button type="submit" class="button fit" value="Create Group"></button>
 							</div>
-						</form>
-						<form id="joinGroup" autocomplete="off" action="#">
-							<h3>Join Group</h3>
+						</div>
+					</form>
+					<form id="joinGroup" autocomplete="off" action="#">
+						<h3>Join Group</h3>
+						<div class="row">
 							<div class="6u 12u$(small)">
 								<input type="text" name="groupID" placeholder="Group ID" id="groupID" autocomplete="off">
 							</div>
 							<div class="4u$ 12u$(small)">
-								<button type="button" class="button fit">Join Group</button>
+								<button type="submit" class="button fit" value="Join Group"></button>
 							</div>
-						</form>
-					</div>
+						</div>
+					</form>
 				</div>
 			</section>
 
 			<section id="requests" class="wrapper special">
 				<div class="inner">
 					<header><h2>Requests</h2></header>
-					<div class="row">
-						<h3>Create Request</h3>
-						<form id="createRequest" action="#" autocomplete="off">
+					<h3>Create Request</h3>
+					<form id="createRequest" action="#" autocomplete="off">
+						<div class="row">
 							<div class="6u 12u$(small)">
 								<input type="text" name="requestDescription" placeholder="Description" id="requestDescription" autocomplete="off">
 							</div>
@@ -179,7 +181,7 @@
 									<option value="DPS">DPS</option>
 								</select>
 							</div>
-							<div class="6u 12u$(small)">
+							<div class="6u$ 12u$(small)">
 								<select class="class-select" data-placeholder="Choose Your Classes" multiple style="display: none;">
 									<option></option>
 									<option value="Monk">Monk</option>
@@ -190,10 +192,10 @@
 								</select>
 							</div>
 							<div class="4u$ 12u$(small)">
-								<button type="button" class="button fit">Create Request</button>
+								<button type="submit" class="button fit" value="Create Request"></button>
 							</div>
-						</form>
-					</div>
+						</div>
+					</form>
 				</div>
 			</section>
 <!-- 
