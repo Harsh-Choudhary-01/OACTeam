@@ -12,6 +12,7 @@
 		<meta name="apple-mobile-web-app-capable" content="yes">
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 		<link rel="stylesheet" href="css/main.css" />
+		<link rel="stylesheet" href="css/chosen.css">
 	</head>
 	<body>
 
@@ -138,7 +139,7 @@
 								<input type="text" name="groupName" placeholder="Group Name" id="groupName" autocomplete="off">
 							</div>
 							<div class="4u$ 12u$(small)">
-								<button type="submit" class="button fit" value="Create Group"></button>
+								<button type="submit" class="button fit">Create Group</button>
 							</div>
 						</div>
 					</form>
@@ -149,7 +150,7 @@
 								<input type="text" name="groupID" placeholder="Group ID" id="groupID" autocomplete="off">
 							</div>
 							<div class="4u$ 12u$(small)">
-								<button type="submit" class="button fit" value="Join Group"></button>
+								<button type="submit" class="button fit">Join Group</button>
 							</div>
 						</div>
 					</form>
@@ -167,7 +168,7 @@
 							</div>
 							<div class="6u$ 12u$(small)">
 								<select class="group-select" data-placeholder="Groups that can View Request" multiple style="display: none;">
-									<option></option>
+									<option value=""></option>
 									<#list groups as g>
 										<option value="${g[0]}">${g[1]}</option>
 									</#list>
@@ -175,7 +176,7 @@
 							</div>
 							<div class="6u 12u$(small)">
 								<select class="role-select" data-placeholder="Choose Your Roles" multiple style="display: none;">
-									<option></option>
+									<option value=""></option>
 									<option value="Healer">Healer</option>
 									<option value="Tank">Tank</option>
 									<option value="DPS">DPS</option>
@@ -183,7 +184,7 @@
 							</div>
 							<div class="6u$ 12u$(small)">
 								<select class="class-select" data-placeholder="Choose Your Classes" multiple style="display: none;">
-									<option></option>
+									<option value=""></option>
 									<option value="Monk">Monk</option>
 									<option value="Warrior">Warrior</option>
 									<option value="Mage">Mage</option>
@@ -192,7 +193,7 @@
 								</select>
 							</div>
 							<div class="4u$ 12u$(small)">
-								<button type="submit" class="button fit" value="Create Request"></button>
+								<button type="submit" class="button fit">Create Request</button>
 							</div>
 						</div>
 					</form>
