@@ -30,7 +30,7 @@ public class Main
         try {
             connection = DatabaseUrl.extract().getConnection();
             Statement stmt = connection.createStatement();
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS users(userID text , name text , groups text[] , joinedRequests text[] ,  joiningRequests text[])");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS users(userID text , name text , groups text[] DEFAULT '{}' , joinedRequests text[] DEFAULT '{}' ,  joiningRequests text[] DEFAULT '{}')");
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS groups(name text , id text)");
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS requests(id text , description text , timestamp timestamp NOT NULL DEFAULT NOW() , joinedInfo text[][] , owner text , joiningReq text[][] , groups text[])");
             //Joined info is 2d array with each row being 1 person : row[0] - id , row[1] - name , row[2] - 1 or 0 bool tank , row[3] - 1 or 0 bool dps , row[4] - 1 or 0 bool heal , row[5] int rep class(concat diff type) 12 1 for warrior 2 for monk etc

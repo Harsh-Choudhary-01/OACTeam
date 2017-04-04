@@ -198,17 +198,21 @@
 					</div>
 				</section>
 			<#else>
-				<form id="assignName" action="#" autocomplete="off">
-					<div class="row uniform">
-						<h2>What is your Name?</h2>
-						<div class="6u 12u$(small)">
-							<input type="text" name="name" placeholder="Game Name" id="gameName" autocomplete="off">
-						</div>
-						<div class="6u$ 12u$(small)">
-							<button type="submit" class="button fit">Save</button>
-						</div>
+				<section class="wrapper style1 special">
+					<div class="inner">
+						<form id="assignName" action="#" autocomplete="off">
+							<div class="row uniform">
+								<h2>What is your Name?</h2>
+								<div class="6u 12u$(small)">
+									<input type="text" name="name" placeholder="Game Name" id="gameName" autocomplete="off">
+								</div>
+								<div class="6u$ 12u$(small)">
+									<button type="submit" class="button fit">Save</button>
+								</div>
+							</div>
+						</form>
 					</div>
-				</form>
+				</section>
 			</#if>
 <!-- 
 			<section id="one" class="wrapper">
