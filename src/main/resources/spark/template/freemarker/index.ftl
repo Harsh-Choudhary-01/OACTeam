@@ -400,7 +400,7 @@
 						e.preventDefault();
 					});
 					$('#assignName').submit(function(e) {
-						var req {
+						var req = {
 							type: "assignName" ,
 							name: $('#gameName').val()
 						};
