@@ -3,7 +3,6 @@ import java.security.SecureRandom;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import static spark.Spark.*;
 
@@ -54,7 +53,6 @@ public class Main
                 String userId = (String)user.get("user_id");
                 Connection connection1 = null;
                 boolean nameGiven = false;
-                Map<String , String> groupNames = new LinkedHashMap<>(); //Contains groupID as key and group name as valu
                 ArrayList<String[]> groupsArray = new ArrayList<>();
                 ArrayList<Map<String , Object>> joinedRequestsList = new ArrayList<>();
                 ArrayList<Map<String , Object>> joiningRequestsList = new ArrayList<>();
@@ -76,7 +74,6 @@ public class Main
                         {
                             rs = stmt.executeQuery("SELECT name from groups where id = '" + s + "'"); //Get groupNames
                             groupsArray.add(new String[]{s , rs.getString(1)});
-                            groupNames.put(s , rs.getString(1));
                         }
                         for(String s : joinedRequests) {
                             rs = stmt.executeQuery("SELECT description , joinedInfo , owner , joiningReq from requests WHERE id = '" + s + "'");
@@ -185,6 +182,8 @@ public class Main
                 String userId = (String)user.get("user_id");
                 if(jsonRequest.get("type").equals("addGroup"))
                     addGroup(jsonResponse , newId , userId , jsonRequest.get("name"));
+                if(jsonRequest.get("type").equals("assignName"))
+                    assignName(jsonResponse , jsonRequest.get("name") , userId);
             }
             if(jsonResponse.opt("success") == null)
                 jsonResponse.put("success" , false);
@@ -252,6 +251,8 @@ public class Main
                 stmt.executeUpdate();
                 con.commit();
                 response.put("success" , true);
+                response.put("name" , name);
+                response.put("id" , groupID);
             }
         }
         catch (Exception e) {
@@ -262,6 +263,28 @@ public class Main
             catch (SQLException s) {
                 s.printStackTrace();
             }
+            e.printStackTrace();
+        }
+        finally {
+            if(con != null) try { con.close(); } catch(SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static void assignName(JSONObject response , String userName , String userID) {
+        Connection con = null;
+        try {
+            if(!checkAlphaNumeric(userName))
+                return;
+            con = DatabaseUrl.extract().getConnection();
+            PreparedStatement stmt = con.prepareStatement("INSERT INTO users (name , userID) VALUES(? , ?)");
+            stmt.setString(1 , userName);
+            stmt.setString(2 , userID);
+            stmt.executeUpdate();
+            response.put("success" , true);
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
         finally {

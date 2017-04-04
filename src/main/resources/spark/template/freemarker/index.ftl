@@ -34,171 +34,182 @@
 				<h1>Welcome to OACTeam</h1>
 			</section>
 		<#if loggedIn>
-			<#if joinedRequests?size != 0>
-				<section id="joined" class="wrapper">
-					<div class="inner">
-						<header>
-							<h2>Joined Requests</h2>
-						</header>
-						<div class="row">
-							<#list joinedRequests as x>
-								<div id="${x.id}" class="box 3u 12u$(small)">
-									<h3>${x.description}</h3>
-									<ul class="alt">
-									<#list x.joinedInfo as info>
-										<li classInfo="${info[4]}">${info[0]}:
-											<#if info[1] == "0">
-												Tank 
-											</#if>
-											<#if info[2] == "0">
-												DPS 
-											</#if>
-											<#if info[3] == "0">
-												Heal
-											</#if>
-										</li>
-									</#list>
-									</ul>
-								</div>
-							</#list>
+			<#if nameGiven>
+				<#if joinedRequests?size != 0>
+					<section id="joined" class="wrapper">
+						<div class="inner">
+							<header>
+								<h2>Joined Requests</h2>
+							</header>
+							<div class="row">
+								<#list joinedRequests as x>
+									<div id="${x.id}" class="box 3u 12u$(small)">
+										<h3>${x.description}</h3>
+										<ul class="alt">
+										<#list x.joinedInfo as info>
+											<li classInfo="${info[4]}">${info[0]}:
+												<#if info[1] == "0">
+													Tank 
+												</#if>
+												<#if info[2] == "0">
+													DPS 
+												</#if>
+												<#if info[3] == "0">
+													Heal
+												</#if>
+											</li>
+										</#list>
+										</ul>
+									</div>
+								</#list>
+							</div>
 						</div>
-					</div>
-				</section>
-			</#if>
-			<#if joiningRequests?size != 0>
-				<section id="joined" class="wrapper special">
-					<div class="inner">
-						<header>
-							<h2>Joining Requests</h2>
-						</header>
-						<div class="row">
-							<#list joiningRequests as x>
-								<div id="${x.id}" class="box 3u 12u$(small)">
-									<h3>${x.description}</h3>
-									<ul class="alt">
-									<#list x.joinedInfo as info>
-										<li classInfo="${info[4]}">${info[0]}:
-											<#if info[1] == "0">
-												Tank 
-											</#if>
-											<#if info[2] == "0">
-												DPS 
-											</#if>
-											<#if info[3] == "0">
-												Heal
-											</#if>
-										</li>
-									</#list>
-									</ul>
-								</div>
-							</#list>
+					</section>
+				</#if>
+				<#if joiningRequests?size != 0>
+					<section id="joined" class="wrapper special">
+						<div class="inner">
+							<header>
+								<h2>Joining Requests</h2>
+							</header>
+							<div class="row">
+								<#list joiningRequests as x>
+									<div id="${x.id}" class="box 3u 12u$(small)">
+										<h3>${x.description}</h3>
+										<ul class="alt">
+										<#list x.joinedInfo as info>
+											<li classInfo="${info[4]}">${info[0]}:
+												<#if info[1] == "0">
+													Tank 
+												</#if>
+												<#if info[2] == "0">
+													DPS 
+												</#if>
+												<#if info[3] == "0">
+													Heal
+												</#if>
+											</li>
+										</#list>
+										</ul>
+									</div>
+								</#list>
+							</div>
 						</div>
-					</div>
-				</section>
-			</#if>
-			<#if requests?size != 0>
-				<section id="joined" class="wrapper">
-					<div class="inner">
-						<header>
-							<h2>Open Requests</h2>
-						</header>
-						<div class="row">
-							<#list requests as x>
-								<div id="${x.id}" class="box 3u 12u$(small)">
-									<h3>${x.description}</h3>
-									<ul class="alt">
-									<#list x.joinedInfo as info>
-										<li classInfo="${info[4]}">${info[0]}:
-											<#if info[1] == "0">
-												Tank 
-											</#if>
-											<#if info[2] == "0">
-												DPS 
-											</#if>
-											<#if info[3] == "0">
-												Heal
-											</#if>
-										</li>
-									</#list>
-									</ul>
-									<a href="#" class="button special">Join</a>
-								</div>
-							</#list>
+					</section>
+				</#if>
+				<#if requests?size != 0>
+					<section id="joined" class="wrapper">
+						<div class="inner">
+							<header>
+								<h2>Open Requests</h2>
+							</header>
+							<div class="row">
+								<#list requests as x>
+									<div id="${x.id}" class="box 3u 12u$(small)">
+										<h3>${x.description}</h3>
+										<ul class="alt">
+										<#list x.joinedInfo as info>
+											<li classInfo="${info[4]}">${info[0]}:
+												<#if info[1] == "0">
+													Tank 
+												</#if>
+												<#if info[2] == "0">
+													DPS 
+												</#if>
+												<#if info[3] == "0">
+													Heal
+												</#if>
+											</li>
+										</#list>
+										</ul>
+										<a href="#" class="button special">Join</a>
+									</div>
+								</#list>
+							</div>
 						</div>
-					</div>
-				</section>
-			</#if>
+					</section>
+				</#if>
 
-			<section id="groups" class="wrapper special">
-				<div class="inner">
-					<header><h2>Groups</h2></header>
-					<h3>Create Group</h3>
-					<form id="createGroup" autocomplete="off" action="#">
-						<div class="row">
-							<div class="6u 12u$(small)">
-								<input type="text" name="groupName" placeholder="Group Name" id="groupName" autocomplete="off">
+				<section id="groups" class="wrapper special">
+					<div class="inner">
+						<header><h2>Groups</h2></header>
+						<h3>Create Group</h3>
+						<form id="createGroup" autocomplete="off" action="#">
+							<div class="row">
+								<div class="6u 12u$(small)">
+									<input type="text" name="groupName" placeholder="Group Name" id="groupName" autocomplete="off">
+								</div>
+								<div class="6u$ 12u$(small)">
+									<button type="submit" class="button fit">Create Group</button>
+								</div>
 							</div>
-							<div class="4u$ 12u$(small)">
-								<button type="submit" class="button fit">Create Group</button>
+						</form>
+						<form id="joinGroup" autocomplete="off" action="#">
+							<h3>Join Group</h3>
+							<div class="row">
+								<div class="6u 12u$(small)">
+									<input type="text" name="groupID" placeholder="Group ID" id="groupID" autocomplete="off">
+								</div>
+								<div class="6u$ 12u$(small)">
+									<button type="submit" class="button fit">Join Group</button>
+								</div>
 							</div>
-						</div>
-					</form>
-					<form id="joinGroup" autocomplete="off" action="#">
-						<h3>Join Group</h3>
-						<div class="row">
-							<div class="6u 12u$(small)">
-								<input type="text" name="groupID" placeholder="Group ID" id="groupID" autocomplete="off">
-							</div>
-							<div class="4u$ 12u$(small)">
-								<button type="submit" class="button fit">Join Group</button>
-							</div>
-						</div>
-					</form>
-				</div>
-			</section>
+						</form>
+					</div>
+				</section>
 
-			<section id="requests" class="wrapper special">
-				<div class="inner">
-					<header><h2>Requests</h2></header>
-					<h3>Create Request</h3>
-					<form id="createRequest" action="#" autocomplete="off">
-						<div class="row uniform">
-							<div class="6u 12u$(small)">
-								<input type="text" name="requestDescription" placeholder="Description" id="requestDescription" autocomplete="off">
+				<section id="requests" class="wrapper special">
+					<div class="inner">
+						<header><h2>Requests</h2></header>
+						<h3>Create Request</h3>
+						<form id="createRequest" action="#" autocomplete="off">
+							<div class="row uniform">
+								<div class="6u 12u$(small)">
+									<input type="text" name="requestDescription" placeholder="Description" id="requestDescription" autocomplete="off">
+								</div>
+								<div class="6u$ 12u$(small)">
+									<select class="group-select" data-placeholder="Groups that can View Request" multiple style="display: none;">
+										<option value=""></option>
+										<#list groups as g>
+											<option value="${g[0]}">${g[1]}</option>
+										</#list>
+									</select>
+								</div>
+								<div class="6u 12u$(small)">
+									<select class="role-select" data-placeholder="Choose Your Roles" multiple style="display: none;">
+										<option value=""></option>
+										<option value="Divine">Divine</option>
+										<option value="Martial">Martial</option>
+										<option value="Assassin">Assassin</option>
+										<option value="Marksman">Marksman</option>
+										<option value="Blazer">Blazer</option>
+										<option value="Garrison">Garrison</option>
+										<option value="Elemental">Elemental</option>
+										<option value="Stargazer">Stargazer</option>
+										<option value="Bloodseeker">Bloodseeker</option>
+										<option value="Guard">Guard</option>
+									</select>
+								</div>
+								<div class="6u$ 12u$(small)">
+									<button type="submit" class="button fit">Create Request</button>
+								</div>
 							</div>
-							<div class="6u$ 12u$(small)">
-								<select class="group-select" data-placeholder="Groups that can View Request" multiple style="display: none;">
-									<option value=""></option>
-									<#list groups as g>
-										<option value="${g[0]}">${g[1]}</option>
-									</#list>
-								</select>
-							</div>
-							<div class="6u 12u$(small)">
-								<select class="role-select" data-placeholder="Choose Your Roles" multiple style="display: none;">
-									<option value=""></option>
-									<option value="Healer">Healer</option>
-									<option value="Tank">Tank</option>
-									<option value="DPS">DPS</option>
-								</select>
-							</div>
-							<div class="6u$ 12u$(small)">
-								<select class="class-select" data-placeholder="Choose Your Classes" multiple style="display: none;">
-									<option value=""></option>
-									<option value="Monk">Monk</option>
-									<option value="Warrior">Warrior</option>
-									<option value="Mage">Mage</option>
-									<option value="Flame">Flame Knight</option>
-									<option value="Ranger">Ranger</option>
-								</select>
-							</div>
-							<div class="4u$ 12u$(small)">
-								<button type="submit" class="button fit">Create Request</button>
-							</div>
+						</form>
+					</div>
+				</section>
+			<#else>
+				<form id="assignName" action="#" autocomplete="off">
+					<div class="row uniform">
+						<h2>What is your Name?</h2>
+						<div class="6u 12u$(small)">
+							<input type="text" name="name" placeholder="Game Name" id="gameName" autocomplete="off">
 						</div>
-					</form>
-				</div>
-			</section>
+						<div class="6u$ 12u$(small)">
+							<button type="submit" class="button fit">Save</button>
+						</div>
+					</div>
+				</form>
+			</#if>
 <!-- 
 			<section id="one" class="wrapper">
 				<div class="inner">
@@ -383,6 +394,27 @@
 								}
 								else {
 									alert("Could not create group.")
+								}
+							}
+						});
+						e.preventDefault();
+					});
+					$('#assignName').submit(function(e) {
+						var req {
+							type: "assignName" ,
+							name: $('#gameName').val()
+						};
+						$.ajax({
+							url: window.location.href ,
+							method: 'POST' ,
+							dataType: 'json' ,
+							data: JSON.stringify(req) ,
+							success: function(data) {
+								if(data.success == true) {
+									window.location.reload(true);
+								}
+								else {
+									alert("Could not set name.")
 								}
 							}
 						});
