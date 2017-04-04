@@ -171,8 +171,15 @@ public class Main
             Map<String , Object> user = getUser(request);
             JSONObject jsonResponse = new JSONObject();
             ObjectMapper mapper = new ObjectMapper();
-            Map<String , String> jsonRequest = mapper.readValue(request.body() , new TypeReference<Map<String , String>>(){});
-            if((boolean) user.get("loggedIn")) {
+            Map<String , String> jsonRequest = null;
+            try {
+                jsonRequest = mapper.readValue(request.body(), new TypeReference<Map<String, String>>() {
+                });
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+            if(jsonRequest != null && (boolean) user.get("loggedIn")) {
                 user = (Map<String , Object>)user.get("claims");
                 String newId = newID();
                 String userId = (String)user.get("user_id");
@@ -239,7 +246,7 @@ public class Main
                 stmt.executeUpdate();
                 //TODO: check user ID make sure logged In and add joined groups to the text[] for the user
                 //TODO: make sure add post type for each post to different
-                stmt = con.prepareStatement("UPDATE users SET groups = array_append(groups , ?) WHERE userID = ?");
+                stmt = con.prepareStatement("UPDATE users SET groups = array_append(groups , ?::text) WHERE userID = ?");
                 stmt.setString(1,  groupID);
                 stmt.setString(2, userId);
                 stmt.executeUpdate();
