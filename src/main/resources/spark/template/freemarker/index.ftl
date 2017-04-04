@@ -376,8 +376,9 @@
 							data: JSON.stringify(req) ,
 							success: function(data) {
 								if(data.success == true) {
-									$('group-select').append('<option val="' + data.id + '">' + data.name + '</option>');
-									$('#createGroup').reset();
+									$('.group-select').append('<option val="' + data.id + '">' + data.name + '</option>');
+									$('.group-select').trigger('chosen:updated');
+									$('#groupName').val('');
 									alert("Group created successfully");
 								}
 								else {
