@@ -47,19 +47,10 @@
 										<h3>${x.description}</h3>
 										<ul class="alt">
 										<#list x.joinedInfo as info>
-											<li classInfo="${info[4]}">${info[0]}:
-												<#if info[1] == "0">
-													Tank 
-												</#if>
-												<#if info[2] == "0">
-													DPS 
-												</#if>
-												<#if info[3] == "0">
-													Heal
-												</#if>
-											</li>
+											<li>${info[1]}: ${info[2]}</li>
 										</#list>
 										</ul>
+										<a href="#" class="button special leave">Leave Request</a>
 									</div>
 								</#list>
 							</div>
@@ -78,19 +69,10 @@
 										<h3>${x.description}</h3>
 										<ul class="alt">
 										<#list x.joinedInfo as info>
-											<li classInfo="${info[4]}">${info[0]}:
-												<#if info[1] == "0">
-													Tank 
-												</#if>
-												<#if info[2] == "0">
-													DPS 
-												</#if>
-												<#if info[3] == "0">
-													Heal
-												</#if>
-											</li>
+											<li>${info[1]}: ${info[2]}</li>
 										</#list>
 										</ul>
+										<a href="#" class="button special cancelJoin">Cancel Join</a>
 									</div>
 								</#list>
 							</div>
@@ -109,20 +91,10 @@
 										<h3>${x.description}</h3>
 										<ul class="alt">
 										<#list x.joinedInfo as info>
-											<li classInfo="${info[4]}">${info[0]}:
-												<#if info[1] == "0">
-													Tank 
-												</#if>
-												<#if info[2] == "0">
-													DPS 
-												</#if>
-												<#if info[3] == "0">
-													Heal
-												</#if>
-											</li>
+											<li>${info[1]}: ${info[2]}</li>
 										</#list>
 										</ul>
-										<a href="#" class="button special">Join</a>
+										<a href="#" class="button special join">Join</a>
 									</div>
 								</#list>
 							</div>
@@ -370,14 +342,24 @@
 					width : "100%"
 				};
 				$(document).ready(function(e) {
-					$('.group-select').chosen(opt).change(function(event , params) {
-						console.log("Chosen parameters group: " + params);
-					});
+					$('.group-select').chosen(opt);
 					$('.role-select').chosen(opt);
 					$('.class-select').chosen(opt);
 					$('.signup').click(function(e) {
 						e.preventDefault();
 						lock.show();
+					});
+					$('.join').click(function(e) {
+						console.log("Join group");
+						e.preventDefault();
+					});
+					$('.leave').click(function(e) {
+						console.log("Leave");
+						e.preventDefault();
+					});
+					$('.cancelJoin').click(function(e) {
+						console.log("Cancel Join");
+						e.preventDefault();
 					});
 					$('#createGroup').submit(function(e) {
 						var req = {
@@ -391,13 +373,36 @@
 							data: JSON.stringify(req) ,
 							success: function(data) {
 								if(data.success == true) {
-									$('.group-select').append('<option val="' + data.id + '">' + data.name + '</option>');
+									$('.group-select').append('<option value="' + data.id + '">' + data.name + '</option>');
 									$('.group-select').trigger('chosen:updated');
 									$('#groupName').val('');
 									alert("Group created successfully");
 								}
 								else {
 									alert("Could not create group.")
+								}
+							}
+						});
+						e.preventDefault();
+					});
+					$('#createRequest').submit(function(e) {
+						var req = {
+							type: "createRequest" ,
+							description: $('#requestDescription').val() ,
+							groups: $('.group-select').chosen().val() , 
+							roles: $('.role-select').chosen().val()
+						}
+						$.ajax({
+							url: window.location.href , 
+							method: 'POST' ,
+							dataType: 'json' ,
+							data: JSON.stringify(req) ,
+							success: function(data) {
+								if(data.success == true) {
+									console.log("Good success");
+								}
+								else {
+									console.log("Fail");
 								}
 							}
 						});
@@ -425,17 +430,27 @@
 						e.preventDefault();
 					});
 					$('#joinGroup').submit(function(e) {
+						var req = {
+							type: "joinGroup" ,
+							id: $("#groupID").val()
+						};
 						$.ajax({
 							url: window.location.href ,
 							method: 'POST' ,
 							dataType: 'json' , 
-							data: $('#groupID').val() ,
+							data: JSON.stringify(req) ,
 							success: function(data) {
-								//TODO: Since posting to same location must specify what request is for
-								//ALSO
-								alert("Joined group");
+								if(data.success == true) {
+									$('.group-select').append('<option value="' + data.id + '">' + data.name + '</option>');
+									$('.group-select').trigger('chosen:updated');
+									$('#groupID').val('');
+									alert("Joined group");
+								}
+								else
+									alert("Please check ID");
 							}
 						});
+						e.preventDefault();
 					});
 					if(!${loggedIn?c}) {
 						var lock = new Auth0Lock('${clientId}' , '${clientDomain}' , {
