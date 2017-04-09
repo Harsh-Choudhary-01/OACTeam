@@ -150,7 +150,7 @@
 									<input type="text" name="requestDescription" placeholder="Description" id="requestDescription" autocomplete="off">
 								</div>
 								<div class="6u$ 12u$(small)">
-									<select class="group-select" data-placeholder="Groups that can View Request" multiple style="display: none;">
+									<select class="group-select" data-placeholder="Groups that can View Request" multiple>
 										<option value=""></option>
 										<#list groups as g>
 											<option value="${g[0]}">${g[1]}</option>
@@ -158,7 +158,7 @@
 									</select>
 								</div>
 								<div class="6u 12u$(small)">
-									<select class="role-select" data-placeholder="Choose Your Roles" multiple style="display: none;">
+									<select class="role-select" data-placeholder="Choose Your Roles" multiple>
 										<option value=""></option>
 										<option value="Divine">Divine</option>
 										<option value="Martial">Martial</option>
@@ -341,7 +341,12 @@
 				    }
 				}
 			</script>
-			<script src="js/jquery.min.js"></script>
+			<!-- <script src="js/jquery.min.js"></script> -->
+			<script
+			  src="https://code.jquery.com/jquery-3.2.1.min.js"
+			  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+			  crossorigin="anonymous">
+			</script>
 			<script src="js/skel.min.js"></script>
 			<script src="js/util.js"></script>
 			<script src="js/main.js"></script>
@@ -393,7 +398,7 @@
 						var reqID = this.id;
 						vex.dialog.open({
 							message: 'Choose roles:' ,
-							input: ['<select class="role-select-vex" data-placeholder="Choose Your Roles" multiple style="display: none;"><option value=""></option><option value="Divine">Divine</option><option value="Martial">Martial</option><option value="Assassin">Assassin</option><option value="Marksman">Marksman</option><option value="Blazer">Blazer</option><option value="Garrison">Garrison</option><option value="Elemental">Elemental</option><option value="Stargazer">Stargazer</option><option value="Bloodseeker">Bloodseeker</option><option value="Guard">Guard</option></select>'].join('') ,
+							input: ['<select class="role-select-vex" data-placeholder="Choose Your Roles" multiple><option value=""></option><option value="Divine">Divine</option><option value="Martial">Martial</option><option value="Assassin">Assassin</option><option value="Marksman">Marksman</option><option value="Blazer">Blazer</option><option value="Garrison">Garrison</option><option value="Elemental">Elemental</option><option value="Stargazer">Stargazer</option><option value="Bloodseeker">Bloodseeker</option><option value="Guard">Guard</option></select>'].join('') ,
 							afterOpen: function() {
 								$('.role-select-vex').chosen(opt);
 							} ,
