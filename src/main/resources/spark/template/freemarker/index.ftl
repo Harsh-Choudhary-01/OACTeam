@@ -13,6 +13,8 @@
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 		<link rel="stylesheet" href="css/main.css" />
 		<link rel="stylesheet" href="css/chosen.css">
+		<link rel="stylesheet" href="css/vex.css" />
+		<link rel="stylesheet" href="css/vex-theme-os.css" />
 	</head>
 	<body>
 
@@ -50,7 +52,15 @@
 											<li>${info[1]}: ${info[2]}</li>
 										</#list>
 										</ul>
-										<a href="#" class="button special leave">Leave Request</a>
+										<#if x.joiningReq?has_content>
+											<h4>Requests To Join</h4>
+											<ul>
+												<#list x.joiningReq as y>
+													<li id="${y[0]}" class="button special acceptReq">Accept ${y[1]}: ${y[2]}</li>
+												</#list>
+											</ul>
+										</#if>
+										<a href="#" id="${x.id}" class="button special leave">Leave Request</a>
 									</div>
 								</#list>
 							</div>
@@ -94,7 +104,7 @@
 											<li>${info[1]}: ${info[2]}</li>
 										</#list>
 										</ul>
-										<a href="#" class="button special join">Join</a>
+										<a href="#" id="${x.id}" class="button special join">Join</a>
 									</div>
 								</#list>
 							</div>
@@ -336,11 +346,40 @@
 			<script src="js/util.js"></script>
 			<script src="js/main.js"></script>
 			<script src="js/chosen.jquery.min.js"></script>
+			<script src="js/vex.combined.min.js"></script>
+			<script>vex.defaultOptions.className = 'vex-theme-os'</script>
 			<script src="https://cdn.auth0.com/js/lock/10.0/lock.min.js"></script>
 			<script type="text/javascript">
 				var opt = {
 					width : "100%"
 				};
+				function leaveRequest(cancelling , idNum) {
+					vex.dialog.confirm({
+					    message: 'Are you sure you want to leave this team?',
+					    callback: function (value) {
+					        if (value) {
+					        	var req = {
+					        		type: cancelling ? "cancelRequest" : "leaveRequest" ,
+					        		id: idNum
+					        	}
+					            $.ajax({
+					            	url: window.location.href ,
+									method: 'POST' ,
+									dataType: 'json' ,
+									data: JSON.stringify(req) ,
+									success: function(data) {
+										if(data.success == true) {
+											alert("Left team");
+										}
+										else {
+											alert("Could not leave. Please try again");
+										}
+									}
+					            });
+					        }
+					    }
+					});
+				}
 				$(document).ready(function(e) {
 					$('.group-select').chosen(opt);
 					$('.role-select').chosen(opt);
@@ -351,15 +390,79 @@
 					});
 					$('.join').click(function(e) {
 						console.log("Join group");
+						var reqID = this.id;
+						vex.dialog.open({
+							message: 'Choose roles:' ,
+							input: ['<select class="role-select-vex" data-placeholder="Choose Your Roles" multiple style="display: none;"><option value=""></option><option value="Divine">Divine</option><option value="Martial">Martial</option><option value="Assassin">Assassin</option><option value="Marksman">Marksman</option><option value="Blazer">Blazer</option><option value="Garrison">Garrison</option><option value="Elemental">Elemental</option><option value="Stargazer">Stargazer</option><option value="Bloodseeker">Bloodseeker</option><option value="Guard">Guard</option></select>'].join('') ,
+							afterOpen: function() {
+								$('.role-select-vex').chosen(opt);
+							} ,
+							callback: function(data) {
+								console.log(data);
+								console.log($('.role-select-vex').chosen().val());
+								if(data) {
+									var req = {
+										type: "joinRequest" , 
+										roles: $('.role-select-vex').chosen().val() ,
+										id: reqID
+									}
+									$.ajax({
+										url: window.location.href ,
+										method: 'POST' ,
+										dataType: 'json' ,
+										data: JSON.stringify(req) ,
+										success: function(data) {
+											if(data.success == true) {
+												window.location.reload(true);
+											}
+											else {
+												alert("Could not join");
+											}
+										}
+									});
+								}
+							}
+						});
 						e.preventDefault();
 					});
 					$('.leave').click(function(e) {
-						console.log("Leave");
 						e.preventDefault();
+						leaveRequest(false , $(this).closest("div[id]").attr('id'));
 					});
 					$('.cancelJoin').click(function(e) {
-						console.log("Cancel Join");
 						e.preventDefault();
+						leaveRequest(true , $(this).closest("div[id]").attr('id'));
+					});
+					$('.acceptReq').click(function(e) {
+						var idNum = this.id;
+						var requestId = $(this).closest("div[id]").attr('id');
+						e.preventDefault();
+						vex.dialog.confirm({
+							message: $(this).text() + '?' ,
+							callback: function(value) {
+								if(value) {
+									var req = {
+										type: "acceptRequest" , 
+										id: requestId , 
+										user: idNum
+									};
+									$.ajax({
+										url: window.location.href ,
+										method: 'POST' ,
+										dataType: 'json' ,
+										data: JSON.stringify(req) ,
+										success: function(data) {
+											if(data.success == true) {
+												window.location.reload(true);
+											}
+											else {
+												alert("Could not accept");
+											}
+										}
+									});
+								}
+							}
+						});
 					});
 					$('#createGroup').submit(function(e) {
 						var req = {
@@ -386,23 +489,31 @@
 						e.preventDefault();
 					});
 					$('#createRequest').submit(function(e) {
-						var req = {
-							type: "createRequest" ,
-							description: $('#requestDescription').val() ,
-							groups: $('.group-select').chosen().val() , 
-							roles: $('.role-select').chosen().val()
-						}
-						$.ajax({
-							url: window.location.href , 
-							method: 'POST' ,
-							dataType: 'json' ,
-							data: JSON.stringify(req) ,
-							success: function(data) {
-								if(data.success == true) {
-									console.log("Good success");
-								}
-								else {
-									console.log("Fail");
+						vex.dialog.confirm({
+							message: 'Create Request?' ,
+							callback: function(value) {
+								if(value) {
+									var req = {
+										type: "createRequest" ,
+										description: $('#requestDescription').val() ,
+										groups: $('.group-select').chosen().val() , 
+										roles: $('.role-select').chosen().val()
+									}
+									$.ajax({
+										url: window.location.href , 
+										method: 'POST' ,
+										dataType: 'json' ,
+										data: JSON.stringify(req) ,
+										success: function(data) {
+											if(data.success == true) {
+												window.location.reload(true);
+												//TODO: append request instead of reloading
+											}
+											else {
+												alert("Could not create request");
+											}
+										}
+									});
 								}
 							}
 						});
@@ -450,7 +561,7 @@
 									alert("Please check ID");
 							}
 						});
-						e.preventDefault();
+						e.preventDefault();	
 					});
 					if(!${loggedIn?c}) {
 						var lock = new Auth0Lock('${clientId}' , '${clientDomain}' , {

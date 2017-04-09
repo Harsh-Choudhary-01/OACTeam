@@ -4,7 +4,6 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static spark.Spark.*;
 
@@ -44,7 +43,7 @@ public class Main
             Statement stmt = connection.createStatement();
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS users(userID text , name text , groups text[] DEFAULT '{}' , joinedRequests text[] DEFAULT '{}' ,  joiningRequests text[] DEFAULT '{}')");
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS groups(name text , id text)");
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS requests(id text , description text , timestamp timestamp NOT NULL DEFAULT NOW() , joinedInfo text[][] , owner text , joiningReq text[][] DEFAULT ARRAY[[NULL , NULL , NULL]]::text[][] , groups text[])");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS requests(id text , description text , timestamp timestamp NOT NULL DEFAULT NOW() , joinedInfo text[][] , owner text , joiningReq text[][] DEFAULT '{}' , groups text[] , joinedUsers text[])");
             //Joined info is 2d array with each row being 1 person : row[0] - id , row[1] - name , row[2] - 1 or 0 bool tank , row[3] - 1 or 0 bool dps , row[4] - 1 or 0 bool heal , row[5] int rep class(concat diff type) 12 1 for warrior 2 for monk etc
         }
         catch (Exception e) {
@@ -57,6 +56,13 @@ public class Main
         }
         get("/", (request, response) ->
         {
+            //TODO: make groups section where user can view their id for their groups
+            //TODO: verification for creating request , filling some role and group and description both client and server
+            //TODO: add better ui for accepting user , one button to view request then multiple vex dialogs with each req
+            //TODO: reject user , accept user , or also cancel and make decision later
+            //TODO: handle cancel request if already been accepted , handle leaving request if does not exist anymore , etc
+            // think of all possible options ^
+            //TODO: leaving request changes joined info of all requests double check
             Map<String, Object> attributes = new HashMap<>();
             Map<String , Object> user = getUser(request);
             attributes.put("loggedIn" , user.get("loggedIn"));
@@ -114,7 +120,6 @@ public class Main
                         statement.setArray(1 , joinedGroups);
                         statement.setArray(2 , joinedReq);
                         statement.setArray(3 , joiningReq);
-                        System.out.println(statement);
                         rs = statement.executeQuery();
                         while(rs.next()) {
                             Map<String , Object> requestItem = new HashMap<>();
@@ -186,28 +191,30 @@ public class Main
             JSONObject jsonReq = null;
             try {
                 jsonReq = new JSONObject(request.body());
+                if ((boolean) user.get("loggedIn")) {
+                    user = (Map<String, Object>) user.get("claims");
+                    String newId = newID();
+                    String userId = (String) user.get("user_id");
+                    if (jsonReq.getString("type").equals("addGroup"))
+                        addGroup(jsonResponse, newId, userId, jsonReq.getString("name"), true);
+                    else if (jsonReq.getString("type").equals("joinGroup"))
+                        addGroup(jsonResponse, jsonReq.getString("id"), userId, "", false);
+                    else if (jsonReq.getString("type").equals("assignName"))
+                        assignName(jsonResponse, jsonReq.getString("name"), userId);
+                    else if (jsonReq.getString("type").equals("createRequest"))
+                        createRequest(jsonResponse, jsonReq.getJSONArray("groups"), jsonReq.getJSONArray("roles"), jsonReq.getString("description"), userId);
+                    else if(jsonReq.getString("type").equals("leaveRequest"))
+                        leaveRequest(jsonResponse , userId , jsonReq.getString("id") , false);
+                    else if(jsonReq.getString("type").equals("cancelRequest"))
+                        leaveRequest(jsonResponse , userId , jsonReq.getString("id") , true);
+                    else if(jsonReq.getString("type").equals("joinRequest"))
+                        joinRequest(jsonResponse , userId , jsonReq.getString("id") , jsonReq.getJSONArray("roles"));
+                    else if(jsonReq.getString("type").equals("acceptRequest"))
+                        acceptRequest(jsonResponse , userId , jsonReq.getString("user") , jsonReq.getString("id"));
+                }
             }
             catch (Exception e) {
                 e.printStackTrace();
-            }
-            if(jsonReq != null && (boolean) user.get("loggedIn")) {
-                user = (Map<String , Object>)user.get("claims");
-                String newId = newID();
-                String userId = (String)user.get("user_id");
-                if(jsonReq.getString("type").equals("addGroup"))
-                    addGroup(jsonResponse , newId , userId , jsonReq.getString("name") , true);
-                else if(jsonReq.getString("type").equals("joinGroup"))
-                    addGroup(jsonResponse , jsonReq.getString("id") , userId , "" , false);
-                else if(jsonReq.getString("type").equals("assignName"))
-                    assignName(jsonResponse , jsonReq.getString("name") , userId);
-                else if(jsonReq.getString("type").equals("createRequest")) {
-                    try {
-                        createRequest(jsonResponse, jsonReq.getJSONArray("groups"), jsonReq.getJSONArray("roles"), jsonReq.getString("description"), userId);
-                    }
-                    catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
             }
             if(jsonResponse.opt("success") == null)
                 jsonResponse.put("success" , false);
@@ -246,6 +253,139 @@ public class Main
         }
     }
 
+    private static void joinRequest(JSONObject response , String userID , String reqID  , JSONArray roles) {
+        Connection con = null;
+        try {
+            if(!checkAlphaNumeric(reqID))
+                return;
+            con = DatabaseUrl.extract().getConnection();
+            String out = "";
+            for(int i = 0 ; i < roles.length() ; i++) {
+                if (!rolesList.contains(roles.getString(i)))
+                    return;
+                out += roles.getString(i) + "/";
+            }
+            out = out.substring(0 , out.length() - 1);
+            PreparedStatement stmt = con.prepareStatement("SELECT name from users WHERE userID = ?");
+            stmt.setString(1 , userID);
+            String name;
+            ResultSet rs = stmt.executeQuery();
+            if(rs.next())
+                name = rs.getString(1);
+            else
+                return;
+            stmt = con.prepareStatement("SELECT EXISTS(SELECT 1 FROM requests WHERE id = ?)");
+            stmt.setString(1 , reqID);
+            rs = stmt.executeQuery();
+            rs.next();
+            if(!rs.getBoolean(1))
+                return;
+            String[][] joiningInfo = new String[1][];
+            joiningInfo[0] = new String[]{userID , name , out};
+            Array sqlArray = con.createArrayOf("text" , joiningInfo);
+            con.setAutoCommit(false);
+            //TODO: verify that user is part of the groups that can join this request
+            stmt = con.prepareStatement("UPDATE requests SET joiningReq = array_cat(joiningReq , ?) WHERE id = ?");
+            stmt.setArray(1 , sqlArray);
+            stmt.setString(2 , reqID);
+            stmt.executeUpdate();
+            stmt = con.prepareStatement("UPDATE users SET joiningRequests = array_append(joiningRequests , ?::text) WHERE userID = ?");
+            stmt.setString(1 , reqID);
+            stmt.setString(2 , userID);
+            stmt.executeUpdate();
+            con.commit();
+            response.put("success" , true);
+        }
+        catch (Exception e) {
+            try {
+                if (con != null)
+                    con.rollback();
+            }
+            catch (SQLException s) {
+                s.printStackTrace();
+            }
+            e.printStackTrace();
+        }
+        finally {
+            if(con != null) try { con.close(); } catch(SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    private static void acceptRequest(JSONObject response , String userID , String requestingUser , String reqID) {
+        Connection con = null;
+        try {
+            con = DatabaseUrl.extract().getConnection();
+            if(!checkAlphaNumeric(requestingUser) || !checkAlphaNumeric(reqID))
+                return;
+            con.setAutoCommit(false);
+            PreparedStatement stmt = con.prepareStatement("SELECT ? = ANY(joiningRequests) from users WHERE userID = ?");
+            stmt.setString(1 , reqID);
+            stmt.setString(2 , requestingUser);
+            ResultSet rs = stmt.executeQuery();
+            if(!rs.next() || !rs.getBoolean(1))
+                return;
+            stmt = con.prepareStatement("SELECT EXISTS(SELECT 1 FROM requests WHERE owner = ? AND id = ?)");
+            stmt.setString(1 , userID);
+            stmt.setString(2 , reqID);
+            rs = stmt.executeQuery();
+            if(!rs.next() || !rs.getBoolean(1))
+                return;
+            stmt = con.prepareStatement("UPDATE users SET joinedRequests = array_append(joinedRequests , ?::text) WHERE userID = ?");
+            stmt.setString(1 , reqID);
+            stmt.setString(2 , requestingUser);
+            stmt.executeUpdate();
+            stmt = con.prepareStatement("UPDATE users SET joiningRequests = array_remove(joiningRequests, ?::text) WHERE userID = ?");
+            stmt.setString(1 , reqID);
+            stmt.setString(2 , requestingUser);
+            stmt.executeUpdate();
+            String[][] array = new String[1][1];
+            array[0][0] = requestingUser;
+            Array sqlArray = con.createArrayOf("text" , array);
+            stmt = con.prepareStatement("SELECT a.joiningReq[i:i] FROM requests a JOIN LATERAL generate_subscripts(a.joiningReq , 1) i " +
+                    "on a.joiningReq[i:i][1:1] = ? WHERE id = ? LIMIT 1");
+            stmt.setArray(1 , sqlArray);
+            stmt.setString(2 , reqID);
+            rs = stmt.executeQuery();
+            if(!rs.next())
+                return;
+            Array joinedInfo = rs.getArray(1);
+            stmt = con.prepareStatement("UPDATE requests SET joinedInfo = array_cat(joinedInfo , ?) WHERE id = ?");
+            stmt.setArray(1 , joinedInfo);
+            stmt.setString(2 , reqID);
+            stmt.executeUpdate();
+            stmt = con.prepareStatement("UPDATE requests SET joiningReq = ARRAY(SELECT ARRAY(SELECT unnest(a.joiningReq[i:i])) FROM " +
+                    "requests a JOIN LATERAL generate_subscripts(a.joiningReq , 1) i on a.joiningReq[i:i][1:1] != " +
+                    "? WHERE id = ?)");
+            stmt.setArray(1 , sqlArray);
+            stmt.setString(2 , reqID);
+            stmt.executeUpdate();
+            stmt = con.prepareStatement("UPDATE requests SET joinedUsers = array_append(joinedUsers , ?::text) WHERE id = ?");
+            stmt.setString(1 , requestingUser);
+            stmt.setString(2 , reqID);
+            stmt.executeUpdate();
+            con.commit();
+            response.put("success" , true);
+        }
+        catch (Exception e) {
+            try {
+                if (con != null)
+                    con.rollback();
+            }
+            catch (SQLException s) {
+                s.printStackTrace();
+            }
+            e.printStackTrace();
+        }
+        finally {
+            if(con != null) try { con.close(); } catch(SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     private static String newID() {
         return new BigInteger(60, random).toString(32);
     }
@@ -253,7 +393,7 @@ public class Main
     private static boolean checkAlphaNumeric(String s) {
         for(int i = 0 ; i < s.length() ; i++) {
             char c = s.charAt(i);
-            if (!Character.isLetterOrDigit(c) && !Character.isWhitespace(c) && c != '.' && c != '!' && c != '$' && c != '%')
+            if (!Character.isLetterOrDigit(c) && !Character.isWhitespace(c) && c != '.' && c != '!' && c != '$' && c != '%' && c != '|' && c != '-')
                 return false;
         }
         return true;
@@ -349,10 +489,11 @@ public class Main
             System.out.println("Description ok");
             con = DatabaseUrl.extract().getConnection();
             String[] groupsArray = new String[groups.length()];
-            PreparedStatement stmt = con.prepareStatement("SELECT EXISTS(SELECT 1 from users where ? = ANY(groups))");
-            for(int i = 0 ; i < groups.length() ; i ++) //TODO: check that valid group and user is joined
+            PreparedStatement stmt = con.prepareStatement("SELECT EXISTS(SELECT 1 from users where ? = userID AND ? = ANY(groups))");
+            for(int i = 0 ; i < groups.length() ; i ++)
             {
-                stmt.setString(1 , groups.getString(i));
+                stmt.setString(1 , userID);
+                stmt.setString(2 , groups.getString(i));
                 groupsArray[i] = groups.getString(i);
                 ResultSet rs = stmt.executeQuery();
                 if(rs.next()) {
@@ -366,7 +507,7 @@ public class Main
             stmt = con.prepareStatement("SELECT name from users WHERE userID = ?");
             stmt.setString(1 , userID);
             ResultSet rs = stmt.executeQuery();
-            String name = "";
+            String name;
             if(rs.next())
                 name = rs.getString(1);
             else
@@ -381,20 +522,25 @@ public class Main
             out = out.substring(0 , out.length() - 1);
             String reqID = newID();
             String[][] joinedInfo = new String[1][];
+            String[] joinedUsers = new String[1];
+            joinedUsers[0] = userID;
             joinedInfo[0] = new String[]{userID , name , out};
+            Array joinedSQL = con.createArrayOf("text" , joinedUsers);
             Array joinedInfoArray = con.createArrayOf("text" , joinedInfo);
             Array groupsSQL = con.createArrayOf("text" , groupsArray);
             con.setAutoCommit(false);
-            stmt = con.prepareStatement("INSERT INTO requests (id , description , joinedInfo , owner , groups) VALUES(? , ? , ? , ? , ?)");
+            stmt = con.prepareStatement("INSERT INTO requests (id , description , joinedInfo , owner , groups , joinedUsers) VALUES(? , ? , ? , ? , ? , ?)");
             stmt.setString(1 , reqID);
             stmt.setString(2 , description);
             stmt.setArray(3 , joinedInfoArray);
             stmt.setString(4 , userID);
             stmt.setObject(5 , groupsSQL);
+            stmt.setArray(6 , joinedSQL);
             stmt.executeUpdate();
             System.out.println("1 update done");
             joinedInfoArray.free();
             groupsSQL.free();
+            joinedSQL.free();
             stmt = con.prepareStatement("UPDATE users SET joinedRequests = array_append(joinedRequests , ?::text) WHERE userID = ?");
             stmt.setString(1 , reqID);
             stmt.setString(2 , userID);
@@ -409,6 +555,157 @@ public class Main
                     con.rollback();
             }
             catch(Exception s) {
+                s.printStackTrace();
+            }
+            e.printStackTrace();
+        }
+        finally {
+            if(con != null) try { con.close(); } catch(SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static void leaveRequest(JSONObject response , String userID , String reqID , boolean canceling) {
+        Connection con = null;
+        System.out.println("Leaving , cancelling: " + canceling);
+        try {
+            if(!checkAlphaNumeric(reqID))
+                return;
+            con = DatabaseUrl.extract().getConnection();
+            con.setAutoCommit(false);
+            PreparedStatement stmt;
+            if(!canceling) {
+                stmt = con.prepareStatement("SELECT owner , joinedUsers FROM requests WHERE id = ? AND ? = ANY(joinedUsers)");
+                stmt.setString(1 , reqID);
+                stmt.setString(2 , userID);
+            }
+            else {
+                stmt = con.prepareStatement("SELECT EXISTS(SELECT 1 from users WHERE userID = ? AND ? = ANY(joiningRequests))");
+                stmt.setString(1 , userID);
+                stmt.setString(2 , reqID);
+                System.out.println(stmt);
+                ResultSet rs = stmt.executeQuery();
+                if(rs.next()) {
+                    if (!rs.getBoolean(1))
+                        return;
+                }
+                else
+                    return;
+                stmt = con.prepareStatement("SELECT owner FROM requests WHERE id = ?");
+                stmt.setString(1 , reqID);
+            }
+            System.out.println(stmt);
+            ResultSet rs = stmt.executeQuery();
+            if(rs.next()) {
+                String owner = rs.getString(1);
+                System.out.println("Owner for requesT: " + reqID + " is " + owner + " , posting user is: " + userID);
+                if(owner.equals(userID)) {
+                    String[] joined = (String[])rs.getArray(2).getArray();
+                    if(joined.length == 1)
+                    {
+                        con.setAutoCommit(false);
+                        stmt = con.prepareStatement("DELETE from requests WHERE id = ?");
+                        stmt.setString(1 , reqID);
+                        stmt.executeUpdate();
+                        stmt = con.prepareStatement("UPDATE users SET joinedRequests = array_remove(joinedRequests , ?::text)");
+                        stmt.setString(1 , reqID);
+                        stmt.executeUpdate();
+                        stmt = con.prepareStatement("UPDATE users SET joiningRequests = array_remove(joiningRequests , ?::text)");
+                        stmt.setString(1 , reqID);
+                        stmt.executeUpdate();
+                        con.commit();
+                    }
+                    else {
+                        String s = ""; //Who new owner is
+                        for(String join : joined) {
+                            System.out.println("Joined user: " + join);
+                            if (!join.equals(owner)) {
+                                System.out.println("NOt equal to owner " + join);
+                                s = join;
+                                break;
+                            }
+                        }
+                        System.out.println(s);
+                        con.setAutoCommit(false);
+                        stmt = con.prepareStatement("UPDATE requests SET owner = ? WHERE id = ?");
+                        stmt.setString(1 , s);
+                        stmt.setString(2 , reqID);
+                        stmt.executeUpdate();
+                        stmt = con.prepareStatement("UPDATE users SET joinedRequests = array_remove(joinedRequests , ?::text) WHERE userID = ?");
+                        stmt.setString(1 , reqID);
+                        stmt.setString(2 , userID);
+                        stmt.executeUpdate();
+                        stmt = con.prepareStatement("UPDATE users SET joiningRequests = array_remove(joiningRequests , ?::text) WHERE userID = ?");
+                        stmt.setString(1 , reqID);
+                        stmt.setString(2 , userID);
+                        stmt.executeUpdate();
+                        stmt = con.prepareStatement("UPDATE requests SET joinedUsers = array_remove(joinedUsers , ?::text) WHERE id = ?");
+                        stmt.setString(2 , reqID);
+                        stmt.setString(1 , userID);
+                        stmt.executeUpdate();
+                        String[][] array = new String[1][1];
+                        array[0][0] = userID;
+                        Array sqlArray = con.createArrayOf("text" , array);
+                        PreparedStatement deleteUser = con.prepareStatement("UPDATE requests SET joinedInfo = ARRAY(SELECT ARRAY(SELECT unnest(a.joinedInfo[i:i])) FROM " +
+                                "requests a JOIN LATERAL generate_subscripts(a.joinedInfo , 1) i on a.joinedInfo[i:i][1:1] != " +
+                                "? WHERE id = ?) WHERE id = ?");
+                        PreparedStatement deleteJoining = con.prepareStatement("UPDATE requests SET joiningReq = ARRAY(SELECT ARRAY(SELECT unnest(a.joiningReq[i:i])) FROM " +
+                                "requests a JOIN LATERAL generate_subscripts(a.joiningReq , 1) i on a.joiningReq[i:i][1:1] != " +
+                                "? WHERE id = ?) WHERE id = ?");
+                        deleteUser.setArray(1 , sqlArray);
+                        deleteUser.setString(2 , reqID);
+                        deleteUser.setString(3 , reqID);
+                        deleteJoining.setArray(1 , sqlArray);
+                        deleteJoining.setString(2 , reqID);
+                        deleteJoining.setString(3 , reqID);
+                        deleteUser.executeUpdate();
+                        deleteJoining.executeUpdate();
+                        con.commit();
+                    }
+                }
+                else {
+                    con.setAutoCommit(false);
+                    stmt = con.prepareStatement("UPDATE users SET joinedRequests = array_remove(joinedRequests , ?::text) WHERE userID = ?");
+                    stmt.setString(1 , reqID);
+                    stmt.setString(2 , userID);
+                    stmt.executeUpdate();
+                    stmt = con.prepareStatement("UPDATE users SET joiningRequests = array_remove(joiningRequests , ?::text) WHERE userID = ?");
+                    stmt.setString(1 , reqID);
+                    stmt.setString(2 , userID);
+                    stmt.executeUpdate();
+                    stmt = con.prepareStatement("UPDATE requests SET joinedUsers = array_remove(joinedUsers , ?::text) WHERE id = ?");
+                    stmt.setString(2 , reqID);
+                    stmt.setString(1 , userID);
+                    stmt.executeUpdate();
+                    String[][] array = new String[1][1];
+                    array[0][0] = userID;
+                    Array sqlArray = con.createArrayOf("text" , array);
+                    PreparedStatement deleteUser = con.prepareStatement("UPDATE requests SET joinedInfo = ARRAY(SELECT ARRAY(SELECT unnest(a.joinedInfo[i:i])) FROM " +
+                            "requests a JOIN LATERAL generate_subscripts(a.joinedInfo , 1) i on a.joinedInfo[i:i][1:1] != " +
+                            "? WHERE id = ?) WHERE id = ?");
+                    PreparedStatement deleteJoining = con.prepareStatement("UPDATE requests SET joiningReq = ARRAY(SELECT ARRAY(SELECT unnest(a.joiningReq[i:i])) FROM " +
+                            "requests a JOIN LATERAL generate_subscripts(a.joiningReq , 1) i on a.joiningReq[i:i][1:1] != " +
+                            "? WHERE id = ?) WHERE id = ?");
+                    deleteUser.setArray(1 , sqlArray);
+                    deleteUser.setString(2 , reqID);
+                    deleteUser.setString(3 , reqID);
+                    deleteJoining.setArray(1 , sqlArray);
+                    deleteJoining.setString(2 , reqID);
+                    deleteJoining.setString(3 , reqID);
+                    deleteUser.executeUpdate();
+                    deleteJoining.executeUpdate();
+                    con.commit();
+                }
+                response.put("success" , true);
+            }
+        }
+        catch (Exception e) {
+            try {
+                if (con != null)
+                    con.rollback();
+            }
+            catch (SQLException s) {
                 s.printStackTrace();
             }
             e.printStackTrace();
