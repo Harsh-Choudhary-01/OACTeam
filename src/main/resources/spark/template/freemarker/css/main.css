@@ -217,6 +217,10 @@
 	}
 
 /* Grid */
+	
+	.hidden {
+		display: none !important;
+	}
 
 	.row {
 		border-bottom: solid 1px transparent;
@@ -2382,7 +2386,7 @@
 				}
 
 			ul.actions.vertical.small li {
-				padding: 0.5em 0 0 0;
+				padding: 0 0 0 0;
 			}
 
 				ul.actions.vertical.small li:first-child {

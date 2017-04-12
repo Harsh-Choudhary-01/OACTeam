@@ -25,6 +25,14 @@ public class Main
     private static ArrayList<String> rolesList = new ArrayList<>();
     public static void main(String[] args)
     {
+        /*
+        TODO: View requests with a group dropdown
+        Leave groups by clicking on the group list
+        Give options to reject and accept requests
+        Change owner if requests aren't accepted or declined for 10 minutes
+        Allow notifications through text/email and see if possible to download a notification app that allows third party
+        Make UI for accepting/rejecting requests better , multiple vex pop ups , three buttons(cancel , ok , reject) close x
+         */
         port(Integer.valueOf(System.getenv("PORT")));
         staticFileLocation("/spark/template/freemarker");
         rolesList.add("Divine");
@@ -88,26 +96,37 @@ public class Main
                         String[] groups = (String[])joinedGroups.getArray();
                         String[] joinedRequests = (String[])joinedReq.getArray();
                         String[] joiningRequests = (String[])joiningReq.getArray();
+                        PreparedStatement statement = connection1.prepareStatement("SELECT name from groups WHERE id = ?");
                         for(String s : groups)
                         {
-                            rs = stmt.executeQuery("SELECT name from groups where id = '" + s + "'"); //Get groupNames
+                            statement.setString(1 , s);
+                            rs = statement.executeQuery();
                             while(rs.next())
                                 groupsArray.add(new String[]{s , rs.getString(1)});
                         }
+                        statement = connection1.prepareStatement("SELECT description , joinedInfo , owner , joiningReq from requests WHERE id = ?");
                         for(String s : joinedRequests) {
-                            rs = stmt.executeQuery("SELECT description , joinedInfo , owner , joiningReq from requests WHERE id = '" + s + "'");
+                            statement.setString(1 , s);
+                            rs = statement.executeQuery();
                             Map<String , Object> requestItem = new HashMap<>();
                             if(rs.next()) {
                                 requestItem.put("id", s);
                                 requestItem.put("description", rs.getString(1));
                                 requestItem.put("joinedInfo", rs.getArray(2).getArray());
-                                if (userId.equals(rs.getString(3)))
-                                    requestItem.put("joiningReq", rs.getArray(4).getArray());
+                                if (userId.equals(rs.getString(3))) {
+                                    JSONArray array = new JSONArray(rs.getArray(4).getArray());
+                                    requestItem.put("joiningReq", array.length() == 0 ? "" : array.toString());
+                                    requestItem.put("owner" , true);
+                                }
+                                else
+                                    requestItem.put("owner" , false);
                                 joinedRequestsList.add(requestItem);
                             }
                         }
+                        statement = connection1.prepareStatement("SELECT description , joinedInfo from requests WHERE id = ?");
                         for(String s : joiningRequests) {
-                            rs = stmt.executeQuery("SELECT description , joinedInfo from requests WHERE id = '" + s + "'");
+                            statement.setString(1 , s);
+                            rs = statement.executeQuery();
                             Map<String , Object> requestItem = new HashMap<>();
                             if(rs.next()) {
                                 requestItem.put("id", s);
@@ -116,10 +135,11 @@ public class Main
                                 joiningRequestsList.add(requestItem);
                             }
                         }
-                        PreparedStatement statement = connection1.prepareStatement("SELECT id , description , joinedInfo from requests WHERE groups && ? AND NOT id = ANY(?) AND NOT id = ANY(?) ORDER BY id DESC LIMIT 20");
+                        statement = connection1.prepareStatement("SELECT id , description , joinedInfo from requests WHERE groups && ? AND NOT id = ANY(?) AND NOT id = ANY(?) ORDER BY id DESC LIMIT 21 OFFSET ?");
                         statement.setArray(1 , joinedGroups);
                         statement.setArray(2 , joinedReq);
                         statement.setArray(3 , joiningReq);
+                        statement.setInt(4 , 0);
                         rs = statement.executeQuery();
                         while(rs.next()) {
                             Map<String , Object> requestItem = new HashMap<>();
@@ -127,6 +147,10 @@ public class Main
                             requestItem.put("description" , rs.getString(2));
                             requestItem.put("joinedInfo" , rs.getArray(3).getArray());
                             requests.add(requestItem);
+                        }
+                        if(requests.size() == 21) {
+                            attributes.put("moreRequests" , true);
+                            requests.remove(20);
                         }
                     }
                     attributes.put("nameGiven" , nameGiven);
@@ -144,6 +168,8 @@ public class Main
                 attributes.put("joiningRequests" , joiningRequestsList);
                 attributes.put("requests" , requests);
             }
+            attributes.put("firstInd" , 0);
+            attributes.put("lessRequests" , false);
             attributes.put("user" , user);
             attributes.put("clientId" , clientId);
             attributes.put("clientDomain" , clientDomain);
@@ -201,6 +227,16 @@ public class Main
                         addGroup(jsonResponse, jsonReq.getString("id"), userId, "", false);
                     else if (jsonReq.getString("type").equals("assignName"))
                         assignName(jsonResponse, jsonReq.getString("name"), userId);
+                    else if(jsonReq.getString("type").equals("refresh")) {
+                        int offset = jsonReq.getInt("current");
+                        if(jsonReq.getBoolean("change")) {
+                            if(jsonReq.getBoolean("prev"))
+                                offset -= 20;
+                            else
+                                offset += 20;
+                        }
+                        refresh(jsonResponse , userId , jsonReq.getJSONArray("groups") , offset);
+                    }
                     else if (jsonReq.getString("type").equals("createRequest"))
                         createRequest(jsonResponse, jsonReq.getJSONArray("groups"), jsonReq.getJSONArray("roles"), jsonReq.getString("description"), userId);
                     else if(jsonReq.getString("type").equals("leaveRequest"))
@@ -211,6 +247,50 @@ public class Main
                         joinRequest(jsonResponse , userId , jsonReq.getString("id") , jsonReq.getJSONArray("roles"));
                     else if(jsonReq.getString("type").equals("acceptRequest"))
                         acceptRequest(jsonResponse , userId , jsonReq.getString("user") , jsonReq.getString("id"));
+                    else if(jsonReq.getString("type").equals("leaveGroup"))
+                        leaveGroup(jsonResponse , userId , jsonReq.getString("id"));
+                    else if(jsonReq.getString("type").equals("removeUser")) {
+                        Connection con = null;
+                        try {
+                            con = DatabaseUrl.extract().getConnection();
+                            PreparedStatement stmt = con.prepareStatement("SELECT EXISTS(SELECT 1 from requests WHERE owner = ? AND id = ?)");
+                            stmt.setString(1 , userId);
+                            stmt.setString(2 , jsonReq.getString("id"));
+                            ResultSet rs = stmt.executeQuery();
+                            if(rs.next() && rs.getBoolean(1)) {
+                                leaveRequest(jsonResponse , jsonReq.getString("user") , jsonReq.getString("id") , false);
+                            }
+                        }
+                        catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        finally {
+                            if(con != null) try { con.close(); } catch(SQLException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                    else if(jsonReq.getString("type").equals("rejectRequest")) {
+                        Connection con = null;
+                        try {
+                            con = DatabaseUrl.extract().getConnection();
+                            PreparedStatement stmt = con.prepareStatement("SELECT EXISTS(SELECT 1 from requests WHERE owner = ? AND id = ?)");
+                            stmt.setString(1 , userId);
+                            stmt.setString(2 , jsonReq.getString("id"));
+                            ResultSet rs = stmt.executeQuery();
+                            if(rs.next() && rs.getBoolean(1))
+                                leaveRequest(jsonResponse , jsonReq.getString("user") , jsonReq.getString("id") , true);
+                        }
+                        catch (Exception e)
+                        {
+                            e.printStackTrace();
+                        }
+                        finally {
+                            if(con != null) try { con.close(); } catch(SQLException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception e) {
@@ -253,10 +333,80 @@ public class Main
         }
     }
 
+    private static void refresh(JSONObject response , String userID , JSONArray groups , int offset ) {
+        Connection con = null;
+        if(offset < 0)
+            offset = 0;
+        System.out.println("Offset: " + offset);
+        try {
+            con = DatabaseUrl.extract().getConnection();
+            String[] groupArray = new String[groups.length()];
+            for(int i = 0 ; i < groups.length(); i++)
+                groupArray[i] = groups.getString(i);
+            Array sqlGroups = con.createArrayOf("text" , groupArray);
+            PreparedStatement stmt = con.prepareStatement("SELECT id , description , joinedInfo from requests , users WHERE userID = ? AND requests.groups && ? AND NOT id = ANY(users.joinedRequests) AND NOT id = ANY(users.joiningRequests) ORDER BY id DESC LIMIT 21 OFFSET ?");
+            stmt.setArray(2 , sqlGroups);
+            stmt.setString(1 , userID);
+            stmt.setInt(3 , offset);
+            ResultSet rs = stmt.executeQuery();
+            JSONArray requests = new JSONArray();
+            response.put("firstInd" , offset);
+            if(offset != 0)
+                response.put("previous" , true);
+            else
+                response.put("previous" , false);
+            while (rs.next()) {
+                JSONObject requestItem = new JSONObject();
+                requestItem.put("id" , rs.getString(1));
+                requestItem.put("description" , rs.getString(2));
+                requestItem.put("joinedInfo" , rs.getArray(3).getArray());
+                requests.put(requestItem);
+            }
+            if(requests.length() == 21) {
+                response.put("next", true);
+                requests.remove(20);
+            }
+            else
+                response.put("next" , false);
+            response.put("requests" , requests);
+            response.put("success" , true);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+            if(con != null) try { con.close(); } catch(SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static void leaveGroup(JSONObject response , String userID , String groupID) {
+        Connection con = null;
+        try {
+            con = DatabaseUrl.extract().getConnection();
+            PreparedStatement stmt = con.prepareStatement("UPDATE users SET groups = array_remove(groups , ?::text) WHERE userID = ?");
+            stmt.setString(1 , groupID);
+            stmt.setString(2 , userID);
+            stmt.executeUpdate();
+            response.put("success" , true);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+            if(con != null) try { con.close(); } catch(SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     private static void joinRequest(JSONObject response , String userID , String reqID  , JSONArray roles) {
         Connection con = null;
         try {
             if(!checkAlphaNumeric(reqID))
+                return;
+            if(roles.length() == 0)
                 return;
             con = DatabaseUrl.extract().getConnection();
             String out = "";
@@ -277,14 +427,18 @@ public class Main
             stmt = con.prepareStatement("SELECT EXISTS(SELECT 1 FROM requests WHERE id = ?)");
             stmt.setString(1 , reqID);
             rs = stmt.executeQuery();
-            rs.next();
-            if(!rs.getBoolean(1))
+            if(!rs.next() || !rs.getBoolean(1))
+                return;
+            stmt = con.prepareStatement("SELECT EXISTS(SELECT 1 from requests , users WHERE ? = users.userID AND ? = requests.id AND requests.groups && users.groups)");
+            stmt.setString(1 , userID);
+            stmt.setString(2 , reqID);
+            rs = stmt.executeQuery();
+            if(!rs.next() || !rs.getBoolean(1))
                 return;
             String[][] joiningInfo = new String[1][];
             joiningInfo[0] = new String[]{userID , name , out};
             Array sqlArray = con.createArrayOf("text" , joiningInfo);
             con.setAutoCommit(false);
-            //TODO: verify that user is part of the groups that can join this request
             stmt = con.prepareStatement("UPDATE requests SET joiningReq = array_cat(joiningReq , ?) WHERE id = ?");
             stmt.setArray(1 , sqlArray);
             stmt.setString(2 , reqID);
@@ -393,7 +547,7 @@ public class Main
     private static boolean checkAlphaNumeric(String s) {
         for(int i = 0 ; i < s.length() ; i++) {
             char c = s.charAt(i);
-            if (!Character.isLetterOrDigit(c) && !Character.isWhitespace(c) && c != '.' && c != '!' && c != '$' && c != '%' && c != '|' && c != '-')
+            if (!Character.isLetterOrDigit(c) && !Character.isWhitespace(c) && c != '.' && c != '!' && c != '$'  && c != '|' && c != '-')
                 return false;
         }
         return true;
@@ -484,7 +638,7 @@ public class Main
     private static void createRequest(JSONObject response , JSONArray groups , JSONArray roles , String description , String userID) {
         Connection con = null;
         try {
-            if(!checkAlphaNumeric(description) && description.length() > 100)
+            if(!checkAlphaNumeric(description) || description.length() > 100 || description.length() == 0 || roles.length() == 0 || groups.length() == 0)
                 return;
             System.out.println("Description ok");
             con = DatabaseUrl.extract().getConnection();

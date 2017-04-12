@@ -22,12 +22,6 @@
 			<header id="header">
 				<div class="inner">
 					<a href="/" class="logo">OACTeam</a>
-					<nav id="nav">
-						<a href="/">Home</a>
-						<a href="/generic">Generic</a>
-						<a href="/elements">Elements</a>
-					</nav>
-					<a href="#navPanel" class="navPanelToggle"><span class="fa fa-bars"></span></a>
 				</div>
 			</header>
 
@@ -38,7 +32,7 @@
 		<#if loggedIn>
 			<#if nameGiven>
 				<#if joinedRequests?size != 0>
-					<section id="joined" class="wrapper">
+					<section id="joined" class="wrapper style1">
 						<div class="inner">
 							<header>
 								<h2>Joined Requests</h2>
@@ -46,21 +40,24 @@
 							<div class="row">
 								<#list joinedRequests as x>
 									<div id="${x.id}" class="box 3u 12u$(small)">
-										<h3>${x.description}</h3>
-										<ul class="alt">
-										<#list x.joinedInfo as info>
-											<li>${info[1]}: ${info[2]}</li>
-										</#list>
-										</ul>
-										<#if x.joiningReq?has_content>
-											<h4>Requests To Join</h4>
-											<ul>
-												<#list x.joiningReq as y>
-													<li id="${y[0]}" class="button special acceptReq">Accept ${y[1]}: ${y[2]}</li>
+										<h3 style="word-wrap: break-word;">${x.description}</h3>
+										<#if x.owner>
+											<ul class="actions vertical small">
+												<#list x.joinedInfo as info>
+													<li id="${info[0]}" class="removeUser button fit small" style="white-space: normal; height: 100%; word-wrap: break-word;">${info[1]}: ${info[2]}</li>
+												</#list>
+											</ul>
+										<#else>
+											<ul class="alt">
+												<#list x.joinedInfo as info>
+													<li style="white-space: normal; height: 100%; word-wrap: break-word;">${info[1]}: ${info[2]}</li>
 												</#list>
 											</ul>
 										</#if>
-										<a href="#" id="${x.id}" class="button special leave">Leave Request</a>
+										<#if x.joiningReq?has_content>
+											<a href="#" id='${x.joiningReq}' class="button fit acceptReq">Active Requests</a>
+										</#if>
+										<a href="#" id="${x.id}" class="button leave fit">Leave Request</a>
 									</div>
 								</#list>
 							</div>
@@ -68,7 +65,7 @@
 					</section>
 				</#if>
 				<#if joiningRequests?size != 0>
-					<section id="joined" class="wrapper special">
+					<section id="joining" class="wrapper special">
 						<div class="inner">
 							<header>
 								<h2>Joining Requests</h2>
@@ -76,13 +73,13 @@
 							<div class="row">
 								<#list joiningRequests as x>
 									<div id="${x.id}" class="box 3u 12u$(small)">
-										<h3>${x.description}</h3>
+										<h3 style="word-wrap: break-word;">${x.description}</h3>
 										<ul class="alt">
 										<#list x.joinedInfo as info>
-											<li>${info[1]}: ${info[2]}</li>
+											<li style="white-space: normal; height: 100%; word-wrap: break-word;">${info[1]}: ${info[2]}</li>
 										</#list>
 										</ul>
-										<a href="#" class="button special cancelJoin">Cancel Join</a>
+										<a href="#" class="button special cancelJoin fit">Cancel Join</a>
 									</div>
 								</#list>
 							</div>
@@ -90,23 +87,42 @@
 					</section>
 				</#if>
 				<#if requests?size != 0>
-					<section id="joined" class="wrapper">
+					<section id="open" class="wrapper style1">
 						<div class="inner">
 							<header>
 								<h2>Open Requests</h2>
 							</header>
 							<div class="row">
+								<div class="6u 12u$(small)">
+									<select class="request-group" data-placeholder="Group Filter" multiple>
+										<option value=""></option>
+										<#list groups as g>
+											<option value="${g[0]}" selected>${g[1]}</option>
+										</#list>
+									</select>
+								</div>
+								<div class="6u$ 12u$(small) refreshContainer">
+									<button class="button fit refresh">Refresh  <i class="fa fa-refresh" style="font-size:24px"></i></button>
+								</div>
 								<#list requests as x>
 									<div id="${x.id}" class="box 3u 12u$(small)">
-										<h3>${x.description}</h3>
+										<h3 style="word-wrap: break-word;">${x.description}</h3>
 										<ul class="alt">
 										<#list x.joinedInfo as info>
-											<li>${info[1]}: ${info[2]}</li>
+											<li style="white-space: normal; height: 100%; word-wrap: break-word;">${info[1]}: ${info[2]}</li>
 										</#list>
 										</ul>
-										<a href="#" id="${x.id}" class="button special join">Join</a>
+										<a href="#" id="${x.id}" class="button join fit">Join</a>
 									</div>
 								</#list>
+							</div>
+							<div class="row">
+								<div class="6u 12u$(small)">
+									<a href="#open" class="button alt fit prevReq changePage hidden" id="${firstInd}">Previous</a>
+								</div>
+								<div class="6u$ 12u$(Small)">
+									<a href="#open" class="button alt fit nextReq changePage hidden" id="${firstInd}">Next</a>
+								</div>
 							</div>
 						</div>
 					</section>
@@ -119,7 +135,7 @@
 						<form id="createGroup" autocomplete="off" action="#">
 							<div class="row">
 								<div class="6u 12u$(small)">
-									<input type="text" name="groupName" placeholder="Group Name" id="groupName" autocomplete="off">
+									<input type="text" name="groupName" placeholder="Group Name" id="groupName" maxlength="100" autocomplete="off" pattern="[A-Za-z|\s.!\\$-]{1 , 100}" title="Alphanumeric , spaces , . , | , ! , $ , and - allowed">
 								</div>
 								<div class="6u$ 12u$(small)">
 									<button type="submit" class="button fit">Create Group</button>
@@ -137,20 +153,28 @@
 								</div>
 							</div>
 						</form>
+						<#if groups?size != 0>
+							<h3>Your Groups</h3>
+							<ul class="actions vertical small">
+								<#list groups as g>
+									<li class="button small leaveGroup" id="${g[0]}">Name: ${g[1]} ID: ${g[0]}</li>
+								</#list>
+							</ul>
+						</#if>
 					</div>
 				</section>
 
-				<section id="requests" class="wrapper special">
+				<section id="requests" class="wrapper special style1">
 					<div class="inner">
 						<header><h2>Requests</h2></header>
 						<h3>Create Request</h3>
 						<form id="createRequest" action="#" autocomplete="off">
 							<div class="row uniform">
 								<div class="6u 12u$(small)">
-									<input type="text" name="requestDescription" placeholder="Description" id="requestDescription" autocomplete="off">
+									<input type="text" name="requestDescription" placeholder="Description" id="requestDescription" autocomplete="off" required maxlength="100" pattern="[A-Za-z|\s.!\\$-]{1 , 100}" title="Alphanumeric , spaces , . , | , ! , $ , and - allowed">
 								</div>
 								<div class="6u$ 12u$(small)">
-									<select class="group-select" data-placeholder="Groups that can View Request" multiple>
+									<select required class="group-select" data-placeholder="Groups that can View Request" multiple>
 										<option value=""></option>
 										<#list groups as g>
 											<option value="${g[0]}">${g[1]}</option>
@@ -158,7 +182,7 @@
 									</select>
 								</div>
 								<div class="6u 12u$(small)">
-									<select class="role-select" data-placeholder="Choose Your Roles" multiple>
+									<select required class="role-select" data-placeholder="Choose Your Roles" multiple>
 										<option value=""></option>
 										<option value="Divine">Divine</option>
 										<option value="Martial">Martial</option>
@@ -186,7 +210,7 @@
 							<div class="row uniform">
 								<h2>What is your Name?</h2>
 								<div class="6u 12u$(small)">
-									<input type="text" name="name" placeholder="Game Name" id="gameName" autocomplete="off">
+									<input type="text" name="name" placeholder="Game Name" id="gameName" autocomplete="off" pattern="[A-Za-z|\s.!\\$-]{5 , 100}" title="Alphanumeric , spaces , . , | , ! , $ , and - allowed , 5 to 100 characters">
 								</div>
 								<div class="6u$ 12u$(small)">
 									<button type="submit" class="button fit">Save</button>
@@ -355,6 +379,10 @@
 			<script>vex.defaultOptions.className = 'vex-theme-os'</script>
 			<script src="https://cdn.auth0.com/js/lock/10.0/lock.min.js"></script>
 			<script type="text/javascript">
+				var isMoreRequests = ${(moreRequests!false)?c};
+				if(isMoreRequests)
+					$('.nextReq').removeClass('hidden');
+				var currentReqNum = ${firstInd};
 				var opt = {
 					width : "100%"
 				};
@@ -385,26 +413,168 @@
 					    }
 					});
 				}
+				function updateRequests(data) {
+					$('#open').find('.box').remove();
+					$('.changePage').attr('id' , data.firstInd);
+					currentReqNum = data.firstInd;
+					var requests = data.requests;
+					if(requests.length > 0) {
+						var list = '';
+						for(var j = 0 ; j < requests[0].joinedInfo.length ; j++)
+							list += '<li style="white-space: normal; height: 100%; word-wrap: break-word;">' + requests[0].joinedInfo[j][1] + ': ' + requests[0].joinedInfo[j][2] + '</li>';
+						var html = ['<div id="' + requests[0].id + '" class="box 3u 12u$(small)">' ,
+							'<h3 style="word-wrap: break-word;">' + requests[0].description + '</h3>' ,
+							'<ul class="alt">' ,
+							list ,
+							'</ul>' ,
+							'<a href="#" id="' + requests[0].id + '" class="button join fit">Join</a>' , 
+						'</div>'].join('');
+						$('#open .refreshContainer').last().after($(html));
+						for(var i = 1 ; i < requests.length ; i ++) {
+							list = '';
+							for(var j = 0 ; j < requests[i].joinedInfo.length ; j++)
+								list += '<li style="white-space: normal; height: 100%; word-wrap: break-word;">' + requests[i].joinedInfo[j][1] + ': ' + requests[i].joinedInfo[j][2] + '</li>';
+							html = ['<div id="' + requests[i].id + '" class="box 3u 12u$(small)">' ,
+								'<h3 style="word-wrap: break-word;">' + requests[i].description + '</h3>' ,
+								'<ul class="alt">' ,
+								list ,
+								'</ul>' ,
+								'<a href="#" id="' + requests[i].id + '" class="button join fit">Join</a>' , 
+							'</div>'].join('');
+							$('#open .box').last().after($(html));
+						}
+					}
+					if(data.previous) {
+						$('.prevReq').removeClass('hidden');
+					}
+					else {
+						$('.prevReq').addClass('hidden');
+					}
+					if(data.next) {
+						$('.nextReq').removeClass('hidden');
+					}
+					else {
+						$('.nextReq').addClass('hidden');
+					}
+				}
 				$(document).ready(function(e) {
 					$('.group-select').chosen(opt);
+					$('.request-group').chosen(opt);
 					$('.role-select').chosen(opt);
 					$('.class-select').chosen(opt);
 					$('.signup').click(function(e) {
 						e.preventDefault();
 						lock.show();
 					});
+					$('.refresh').click(function(e) {
+						e.preventDefault();
+						e.stopImmediatePropagation();
+						if($(this).find('i').first().hasClass('fa-spin'))
+							return false;
+						$(this).find('i').first().addClass('fa-spin');
+						var req = {
+							type: 'refresh' , 
+							prev: false ,
+							groups: $('.request-group').chosen().val() ,
+							current: currentReqNum ,
+							change: false
+						}
+						$.ajax({
+							url: window.location.href ,
+							method: 'POST' ,
+							dataType: 'json' ,
+							data: JSON.stringify(req) , 
+							success: function(data) {
+								$('.refresh').find('i').first().removeClass('fa-spin');
+								if(data.success == true)
+									updateRequests(data);
+								else
+									alert("Could not refresh");
+							}
+						});
+					})
+					$('.prevReq').click(function(e) {
+						e.preventDefault();
+						var req = {
+							type: 'refresh' , 
+							prev: true ,
+							groups: $('.request-group').chosen().val() ,
+							current: currentReqNum ,
+							change: true
+						}
+						$.ajax({
+							url: window.location.href ,
+							method: 'POST' ,
+							dataType: 'json' ,
+							data: JSON.stringify(req) , 
+							success: function(data) {
+								if(data.success == true)
+									updateRequests(data);
+								else
+									alert("Could not update");
+							}
+						});
+					});
+					$('.nextReq').click(function(e) {
+						e.preventDefault();
+						var req = {
+							type: 'refresh' , 
+							prev: false ,
+							groups: $('.request-group').chosen().val() ,
+							current: currentReqNum ,
+							change : true
+						}
+						$.ajax({
+							url: window.location.href ,
+							method: 'POST' ,
+							dataType: 'json' ,
+							data: JSON.stringify(req) , 
+							success: function(data) {
+								if(data.success == true)
+									updateRequests(data);
+								else
+									alert("Could not update");
+							}
+						});
+					});
+					$('.leaveGroup').click(function(e) {
+						e.preventDefault();
+						var groupID = this.id;
+						vex.dialog.confirm({
+							message: 'Leave ' + $(this).text() + '?',
+							callback: function(value) {
+								if(value) {
+									var req = {
+										type: "leaveGroup" , 
+										id: groupID
+									};
+									$.ajax({
+										url: window.location.href ,
+										method: 'POST' ,
+										dataType: 'json' ,
+										data: JSON.stringify(req) ,
+										success: function(data) {
+											if(data.success == true) {
+												window.location.reload(true);
+											}
+											else {
+												alert("Could not leave group");
+											}
+										}
+									});
+								}
+							}
+						});
+					});
 					$('.join').click(function(e) {
-						console.log("Join group");
 						var reqID = this.id;
 						vex.dialog.open({
 							message: 'Choose roles:' ,
-							input: ['<select class="role-select-vex" data-placeholder="Choose Your Roles" multiple><option value=""></option><option value="Divine">Divine</option><option value="Martial">Martial</option><option value="Assassin">Assassin</option><option value="Marksman">Marksman</option><option value="Blazer">Blazer</option><option value="Garrison">Garrison</option><option value="Elemental">Elemental</option><option value="Stargazer">Stargazer</option><option value="Bloodseeker">Bloodseeker</option><option value="Guard">Guard</option></select>'].join('') ,
+							input: ['<select class="role-select-vex required" data-placeholder="Choose Your Roles" multiple><option value=""></option><option value="Divine">Divine</option><option value="Martial">Martial</option><option value="Assassin">Assassin</option><option value="Marksman">Marksman</option><option value="Blazer">Blazer</option><option value="Garrison">Garrison</option><option value="Elemental">Elemental</option><option value="Stargazer">Stargazer</option><option value="Bloodseeker">Bloodseeker</option><option value="Guard">Guard</option></select>'].join('') ,
 							afterOpen: function() {
 								$('.role-select-vex').chosen(opt);
 							} ,
 							callback: function(data) {
-								console.log(data);
-								console.log($('.role-select-vex').chosen().val());
 								if(data) {
 									var req = {
 										type: "joinRequest" , 
@@ -434,20 +604,19 @@
 						e.preventDefault();
 						leaveRequest(false , $(this).closest("div[id]").attr('id'));
 					});
-					$('.cancelJoin').click(function(e) {
-						e.preventDefault();
-						leaveRequest(true , $(this).closest("div[id]").attr('id'));
+					$('body').on('click' , '.vex-overlay' , function() {
+						vex.closeAll();
 					});
-					$('.acceptReq').click(function(e) {
-						var idNum = this.id;
-						var requestId = $(this).closest("div[id]").attr('id');
+					$('.removeUser').click(function(e) {
 						e.preventDefault();
+						var requestId = $(this).closest("div[id]").attr('id');
+						var idNum = this.id;
 						vex.dialog.confirm({
-							message: $(this).text() + '?' ,
+							message: 'Remove ' + $(this).text() + "?" ,
 							callback: function(value) {
 								if(value) {
 									var req = {
-										type: "acceptRequest" , 
+										type: "removeUser" , 
 										id: requestId , 
 										user: idNum
 									};
@@ -461,13 +630,66 @@
 												window.location.reload(true);
 											}
 											else {
-												alert("Could not accept");
+												alert("Could not remove user");
 											}
 										}
 									});
 								}
 							}
 						});
+					});
+					$('.cancelJoin').click(function(e) {
+						e.preventDefault();
+						leaveRequest(true , $(this).closest("div[id]").attr('id'));
+					});
+					$('.acceptReq').click(function(e) {
+						e.preventDefault();
+						var joiningReq = JSON.parse(this.id);
+						var requestId = $(this).closest("div[id]").attr('id');
+						function buildCallback(i) {
+							return function(value) {
+								var req = {
+									type: "acceptRequest" , 
+									id: requestId , 
+									user: joiningReq[i][0]
+								};
+								if(value == 'reject') {
+									req.type = "rejectRequest";
+								}
+								if(value != false) {
+									$.ajax({
+										url: window.location.href ,
+										method: 'POST' ,
+										dataType: 'json' ,
+										data: JSON.stringify(req) ,
+										success: function(data) {
+											if(data.success == true) {
+												window.location.reload(true);
+											}
+											else {
+												if(value == 'accept')
+													alert("Could not accept");
+												else
+													alert("Could not reject");
+											}
+										}
+									});
+								}
+							}
+						}
+						for(var i = 0 ; i < joiningReq.length ; i++) {
+							var itNum = i;
+							vex.dialog.confirm({
+								message: 'Accept ' + joiningReq[i][1] + ': ' + joiningReq[i][2] + '?' ,
+								showCloseButton: true , 
+								overlayClosesOnClick: false ,
+								buttons: [
+							        $.extend({}, vex.dialog.buttons.YES, { text: 'Accept' , click : function(e) { this.value = 'accept'; this.close(); } }),
+							        $.extend({}, vex.dialog.buttons.NO, { text: 'Reject' , click : function(e) { this.value = 'reject'; this.close(); }})
+							    ],
+								callback: buildCallback(i)
+							});
+						}
 					});
 					$('#createGroup').submit(function(e) {
 						var req = {
